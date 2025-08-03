@@ -1,4 +1,4 @@
-namespace Shared.Interfaces;
+namespace Shared.DataAccess.Repositories.Interfaces;
 
 public interface IRepository<T> where T : class
 {

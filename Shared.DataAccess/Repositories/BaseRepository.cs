@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Shared.DataAccess.Repositories.Interfaces;
 using Shared.Interfaces;
 using Shared.Models;
 
-namespace Shared.DataAccess;
+namespace Shared.DataAccess.Repositories;
 
-public class Repository<T> : IRepository<T> where T : BaseEntity
+public class BaseRepository<T> : IRepository<T> where T : BaseEntity
 {
     protected readonly DbContext _context;
     protected readonly DbSet<T> _dbSet;
 
-    public Repository(DbContext context)
+    public BaseRepository(DbContext context)
     {
         _context = context;
         _dbSet = context.Set<T>();
