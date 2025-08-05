@@ -1,26 +1,31 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Shared.DataAccess.Providers.Interfaces;
+using Shared.Enums;
+using Shared.Exceptions;
+using Shared.Models.Jwt;
 
 namespace Shared.Microservices.Controllers
 {
     [ExcludeFromCodeCoverage]
-    public abstract class BaseApiController<T> : ControllerBase
+    public abstract class BaseApiController : ControllerBase
     {
-        private readonly IJwtPayloadProvider<T> _jwtPayloadProvider;
+        private readonly IJwtPayloadProvider _jwtPayloadProvider;
 
         private JwtPayloadDto _jwtPayload;
 
-        protected BaseApiController(IJwtPayloadProvider<T> jwtPayloadProvider)
+        protected JwtPayloadDto JwtPayload => _jwtPayload ??= GetJwtPayload();
+
+        protected BaseApiController(IJwtPayloadProvider jwtPayloadProvider)
         {
             _jwtPayloadProvider = jwtPayloadProvider;
         }
 
-        protected JwtPayloadDto JwtPayload => _jwtPayload ??= GetJwtPayload();
-
         protected void CheckIsUserLoggedIn()
         {
-            if (string.IsNullOrEmpty(JwtPayload.LoyaltyId))
+            if (JwtPayload.UserId == Guid.Empty)
             {
                 throw new BadRequestException("Only logged in users have access to this functionality. Please, login.",
                 ErrorCodeEnum.ValidationError);

@@ -2,5 +2,7 @@
 {
     public enum ErrorCodeEnum
     {
+        ValidationError = 0,
+
     }
 }

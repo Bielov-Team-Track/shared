@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Shared.Models.Jwt;
 
 namespace Shared.DataAccess.Providers.Interfaces
 {

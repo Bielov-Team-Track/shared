@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Shared.DataAccess.Repositories.Interfaces;
-using Shared.Interfaces;
 using Shared.Models;
 
 namespace Shared.DataAccess.Repositories;
