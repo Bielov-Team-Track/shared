@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Shared.DataAccess.Providers.Interfaces;
 using Shared.Models.Jwt;
 
@@ -12,7 +13,23 @@ namespace Shared.DataAccess.Providers
 
             try
             {
-                var userIdClaim = claims?.FirstOrDefault(x => x.Type == "UserId")?.Value;
+                string? userIdClaim = null;
+                
+                // Try different claim types that might contain the user ID
+                var claimTypes = new[]
+                {
+                    JwtRegisteredClaimNames.NameId,  // "nameid" - what auth service uses
+                    ClaimTypes.NameIdentifier,       // Standard .NET claim type
+                    "UserId",                        // Custom claim type
+                    "sub"                            // Subject claim (JWT standard)
+                };
+                
+                foreach (var claimType in claimTypes)
+                {
+                    userIdClaim = claims?.FirstOrDefault(x => x.Type == claimType)?.Value;
+                    if (!string.IsNullOrEmpty(userIdClaim))
+                        break;
+                }
 
                 userId = userIdClaim == null ? null : Guid.Parse(userIdClaim);
             }

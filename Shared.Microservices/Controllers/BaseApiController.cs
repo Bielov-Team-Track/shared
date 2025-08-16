@@ -25,10 +25,10 @@ namespace Shared.Microservices.Controllers
 
         protected void CheckIsUserLoggedIn()
         {
-            if (JwtPayload.UserId == Guid.Empty)
+            if (JwtPayload.UserId == Guid.Empty || JwtPayload.UserId is null)
             {
-                throw new BadRequestException("Only logged in users have access to this functionality. Please, login.",
-                ErrorCodeEnum.ValidationError);
+                throw new UnauthorizedException("Only logged in users have access to this functionality. Please, login.",
+                ErrorCodeEnum.Unauthorized);
             }
         }
 
