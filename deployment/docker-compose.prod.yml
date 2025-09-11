@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: volleyer-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - volleyer-network
+
+  auth-service:
+    image: registry.digitalocean.com/${DO_REGISTRY_NAME}/volleyer-auth:latest
+    container_name: volleyer-auth
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5150
+      - ConnectionStrings__DefaultConnection=${AUTH_DB_CONNECTION_STRING}
+      - JWT__SecretKey=${JWT_SECRET_KEY}
+      - JWT__Issuer=volleyer-auth
+      - JWT__Audience=volleyer-app
+      - JWT__ExpirationMinutes=60
+    networks:
+      - volleyer-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5150/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  events-service:
+    image: registry.digitalocean.com/${DO_REGISTRY_NAME}/volleyer-events:latest
+    container_name: volleyer-events
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5160
+      - ConnectionStrings__DefaultConnection=${EVENTS_DB_CONNECTION_STRING}
+      - JWT__SecretKey=${JWT_SECRET_KEY}
+      - JWT__Issuer=volleyer-auth
+      - JWT__Audience=volleyer-app
+    networks:
+      - volleyer-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5160/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  volleyer-network:
+    external: true
