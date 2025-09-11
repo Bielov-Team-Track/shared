@@ -1,5 +1,4 @@
 using Shared.Contracts.Models;
-using Shared.Contracts.Grpc;
 
 namespace Shared.Contracts.Interfaces;
 

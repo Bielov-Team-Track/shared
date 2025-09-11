@@ -10,6 +10,8 @@ using Shared.Models.Jwt;
 namespace Shared.Microservices.Controllers
 {
     [ExcludeFromCodeCoverage]
+    [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public abstract class BaseApiController : ControllerBase
     {
         private readonly IJwtPayloadProvider _jwtPayloadProvider;
