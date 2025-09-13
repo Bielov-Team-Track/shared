@@ -25,9 +25,9 @@ namespace Shared.Exceptions
 
         [JsonIgnore]
         [XmlIgnore]
-        public string AdditionalInformation { get; set; }
+        public string? AdditionalInformation { get; set; }
 
-        public object ErrorDetails { get; set; }
+        public object? ErrorDetails { get; set; }
 
         public ExceptionWithStatusAndErrorCodes(string message, HttpStatusCode statusCode, ErrorCodeEnum errorCode)
             : base(message)
@@ -73,7 +73,7 @@ namespace Shared.Exceptions
         protected ExceptionWithStatusAndErrorCodes(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            StatusCode = (HttpStatusCode)(info.GetValue(nameof(StatusCode), typeof(HttpStatusCode)));
+            StatusCode = (HttpStatusCode)info.GetValue(nameof(StatusCode), typeof(HttpStatusCode));
             ErrorCode = (ErrorCodeEnum)(info.GetValue(nameof(ErrorCode), typeof(ErrorCodeEnum)));
         }
 

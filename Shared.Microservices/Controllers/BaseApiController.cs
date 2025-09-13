@@ -16,9 +16,9 @@ namespace Shared.Microservices.Controllers
     {
         private readonly IJwtPayloadProvider _jwtPayloadProvider;
 
-        private JwtPayloadDto _jwtPayload;
+        private JwtPayloadDto? _jwtPayload;
 
-        protected JwtPayloadDto JwtPayload => _jwtPayload ??= GetJwtPayload();
+        protected JwtPayloadDto? JwtPayload => _jwtPayload ??= GetJwtPayload();
 
         protected BaseApiController(IJwtPayloadProvider jwtPayloadProvider)
         {
@@ -34,11 +34,17 @@ namespace Shared.Microservices.Controllers
             }
         }
 
-        private JwtPayloadDto GetJwtPayload()
+        private JwtPayloadDto? GetJwtPayload()
         {
             var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null || identity.Claims == null)
+            {
+                return null;
+            }
+
             var jwtString = GetJwtFromHeader(HttpContext.Request);
-            var jwtPayload = _jwtPayloadProvider.GetJwtPayload(identity?.Claims, jwtString);
+            var jwtPayload = _jwtPayloadProvider.GetJwtPayload(identity.Claims, jwtString);
 
             return jwtPayload;
         }
