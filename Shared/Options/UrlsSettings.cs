@@ -1,6 +1,6 @@
 ﻿namespace Shared.Options
 {
-    public class UrlsOptions
+    public class UrlsSettings
     {
         public string Web { get; set; }
     }
