@@ -2,7 +2,7 @@
 {
     public class JwtPayloadDto
     {
-        public Guid? UserId { get; set; }
-        public string? AccessToken { get; init; }
+        public Guid UserId { get; set; }
+        public required string AccessToken { get; init; }
     }
 }

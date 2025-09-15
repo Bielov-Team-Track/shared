@@ -9,12 +9,12 @@ namespace Shared.DataAccess.Providers
     {
         public JwtPayloadDto GetJwtPayload(IEnumerable<Claim> claims, string accessToken)
         {
-            Guid? userId;
+            Guid userId;
 
             try
             {
                 string? userIdClaim = null;
-                
+
                 // Try different claim types that might contain the user ID
                 var claimTypes = new[]
                 {
@@ -23,15 +23,22 @@ namespace Shared.DataAccess.Providers
                     "UserId",                        // Custom claim type
                     "sub"                            // Subject claim (JWT standard)
                 };
-                
+
                 foreach (var claimType in claimTypes)
                 {
-                    userIdClaim = claims?.FirstOrDefault(x => x.Type == claimType)?.Value;
+                    userIdClaim = claims.FirstOrDefault(x => x.Type == claimType)?.Value;
                     if (!string.IsNullOrEmpty(userIdClaim))
+                    {
                         break;
+                    }
                 }
 
-                userId = userIdClaim == null ? null : Guid.Parse(userIdClaim);
+                if (userIdClaim == null)
+                {
+                    userIdClaim = Guid.Empty.ToString();
+                }
+
+                userId = Guid.Parse(userIdClaim);
             }
             catch
             {
