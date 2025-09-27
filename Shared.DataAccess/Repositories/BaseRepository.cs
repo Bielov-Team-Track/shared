@@ -22,14 +22,50 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.FindAsync(id);
     }
 
+    public virtual async Task<T?> GetByIdAsync(Guid id, params Expression<Func<T, object>>[] includes)
+    {
+        var query = _dbSet.AsQueryable();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.FirstOrDefaultAsync(e => e.Id == id);
+    }
+
     public virtual async Task<IEnumerable<T>> GetAllAsync()
     {
         return await _dbSet.ToListAsync();
     }
 
-    public async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate)
+    public virtual async Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes)
+    {
+        var query = _dbSet.AsQueryable();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    public virtual async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.Where(predicate).ToListAsync();
+    }
+
+    public virtual async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+    {
+        var query = _dbSet.AsQueryable();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.Where(predicate).ToListAsync();
     }
 
     public virtual async Task<T> AddAsync(T entity)
@@ -59,5 +95,46 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
     public virtual async Task<bool> ExistsAsync(Guid id)
     {
         return await _dbSet.AnyAsync(e => e.Id == id);
+    }
+
+    public Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+    {
+        return _dbSet.AnyAsync(predicate);
+    }
+
+    public virtual IQueryable<T> Query()
+    {
+        return _dbSet.AsQueryable();
+    }
+
+    public virtual async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var result = await operation();
+            await transaction.CommitAsync();
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public virtual async Task ExecuteInTransactionAsync(Func<Task> operation)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await operation();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }
