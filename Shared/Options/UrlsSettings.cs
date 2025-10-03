@@ -2,6 +2,7 @@
 {
     public class UrlsSettings
     {
-        public string Web { get; set; }
+        public string? Web { get; set; }
+        public string? UserProfilesUrl { get; set; }
     }
 }

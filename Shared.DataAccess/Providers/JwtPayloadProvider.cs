@@ -50,7 +50,8 @@ namespace Shared.DataAccess.Providers
             return new JwtPayloadDto
             {
                 AccessToken = accessToken,
-                UserId = userId
+                UserId = userId,
+                Email = claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value ?? string.Empty
             };
         }
     }
