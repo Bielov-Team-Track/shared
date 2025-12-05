@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Mime;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Shared.Enums;
 using Shared.Exceptions;
 using Shared.Extensions;
@@ -13,10 +15,17 @@ namespace Shared.Middleware;
 public class ErrorHandlerMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<ErrorHandlerMiddleware> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public ErrorHandlerMiddleware(RequestDelegate next)
+    public ErrorHandlerMiddleware(
+        RequestDelegate next,
+        ILogger<ErrorHandlerMiddleware> logger,
+        IHostEnvironment environment)
     {
         _next = next;
+        _logger = logger;
+        _environment = environment;
     }
 
     public async Task Invoke(HttpContext context)
@@ -33,13 +42,30 @@ public class ErrorHandlerMiddleware
 
     protected virtual async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
+        // Log the exception
+        var requestPath = context.Request.Path;
+        var requestMethod = context.Request.Method;
+
         var (statusCode, response) = ex switch
         {
             ExceptionWithResult<object> => HandleExceptionWithResult(ex),
-            ExceptionWithStatusAndErrorCodes => HandleExceptionWithStatusAndErrorCodes(ex, context),
-            _ => (HttpStatusCode.InternalServerError,
-                new BaseResponseWithErrorDetailsDto<object, object>(ErrorCodeEnum.InternalError, ex.Message))
+            ExceptionWithStatusAndErrorCodes exWithCodes => HandleExceptionWithStatusAndErrorCodes(exWithCodes, context),
+            _ => HandleUnexpectedException(ex)
         };
+
+        // Log based on status code severity
+        if (statusCode >= HttpStatusCode.InternalServerError)
+        {
+            _logger.LogError(ex,
+                "Unhandled exception occurred. Method: {Method}, Path: {Path}, StatusCode: {StatusCode}, Message: {Message}",
+                requestMethod, requestPath, (int)statusCode, ex.Message);
+        }
+        else if (statusCode >= HttpStatusCode.BadRequest)
+        {
+            _logger.LogWarning(
+                "Client error occurred. Method: {Method}, Path: {Path}, StatusCode: {StatusCode}, Message: {Message}",
+                requestMethod, requestPath, (int)statusCode, ex.Message);
+        }
 
         context.Response.StatusCode = (int)statusCode;
         context.Response.ContentType = context.Request.Headers["Accept"] == MediaTypeNames.Application.Xml
@@ -52,16 +78,33 @@ public class ErrorHandlerMiddleware
         await context.Response.WriteAsync(result);
     }
 
-    private static (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleExceptionWithStatusAndErrorCodes(Exception ex,
+    private (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleUnexpectedException(Exception ex)
+    {
+        // In development, include stack trace in error details
+        object errorDetails = null;
+        if (_environment.IsDevelopment())
+        {
+            errorDetails = new
+            {
+                exceptionType = ex.GetType().Name,
+                stackTrace = ex.StackTrace,
+                innerException = ex.InnerException?.Message
+            };
+        }
+
+        var errorMessage = _environment.IsDevelopment()
+            ? ex.Message
+            : "An unexpected error occurred. Please try again later.";
+
+        return (HttpStatusCode.InternalServerError,
+            new BaseResponseWithErrorDetailsDto<object, object>(ErrorCodeEnum.InternalError, errorMessage, errorDetails));
+    }
+
+    private static (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleExceptionWithStatusAndErrorCodes(
+        ExceptionWithStatusAndErrorCodes exception,
         HttpContext context)
     {
-        var statusCode = HttpStatusCode.InternalServerError;
-
-        // return base response with internal server error
-        if (ex is not ExceptionWithStatusAndErrorCodes exception)
-            return (statusCode, new BaseResponseWithErrorDetailsDto<object, object>(ErrorCodeEnum.InternalError, ex.Message));
-
-        statusCode = exception.StatusCode;
+        var statusCode = exception.StatusCode;
 
         UnauthorizedStatusOverride(statusCode, exception.ErrorCode, context);
 
