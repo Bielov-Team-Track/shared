@@ -7,10 +7,4 @@ public class UserProfile : BaseEntity
     public string? ImageUrl { get; set; }
     public string? Email { get; set; }
     public DateTime? DateOfBirth { get; set; }
-
-    public Guid UserId
-    {
-        get => Id;
-        set => Id = value;
-    }
 }
