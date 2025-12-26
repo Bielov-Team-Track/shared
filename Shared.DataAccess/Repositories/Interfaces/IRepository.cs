@@ -12,10 +12,12 @@ public interface IRepository<T> where T : class
     Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
     Task<T> AddAsync(T entity);
     Task<T> UpdateAsync(T entity);
+    void Update(T entity);
     Task DeleteAsync(Guid id);
     Task<bool> ExistsAsync(Guid id);
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
     IQueryable<T> Query();
+    Task SaveChangesAsync();
 
     // Transaction support
     Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation);

@@ -137,4 +137,14 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
             throw;
         }
     }
+
+    public void Update(T entity)
+    {
+        _dbSet.Update(entity);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
 }
