@@ -84,7 +84,7 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
 
     public virtual async Task DeleteAsync(Guid id)
     {
-        var entity = await GetByIdAsync(id);
+        var entity = await Query().Where(r => r.Id == id).FirstOrDefaultAsync();
         if (entity != null)
         {
             _dbSet.Remove(entity);

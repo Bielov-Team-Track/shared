@@ -12,7 +12,7 @@ public class BaseResponseWithErrorDetailsDto<TResult, TErrorDetails>
     public TResult Result { get; set; }
 
     [JsonProperty("errorDetails")]
-    public TErrorDetails ErrorDetails { get; set; }
+    public TErrorDetails? ErrorDetails { get; set; }
 
     [JsonProperty("responseCode")]
     public ErrorCodeEnum ResponseCode { get; set; }
@@ -30,7 +30,7 @@ public class BaseResponseWithErrorDetailsDto<TResult, TErrorDetails>
     {
     }
 
-    public BaseResponseWithErrorDetailsDto(ErrorCodeEnum responseCode, string errorMessage, TErrorDetails errorDetails = null)
+    public BaseResponseWithErrorDetailsDto(ErrorCodeEnum responseCode, string errorMessage, TErrorDetails? errorDetails = null)
     {
         ResponseCode = responseCode;
         ErrorMessage = errorMessage;
