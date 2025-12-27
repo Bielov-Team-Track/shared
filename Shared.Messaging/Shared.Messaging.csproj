@@ -14,4 +14,10 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.DataAccess\Shared.DataAccess.csproj" />
+    <ProjectReference Include="..\Shared.Messaging.Contracts\Shared.Messaging.Contracts.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+
 </Project>
