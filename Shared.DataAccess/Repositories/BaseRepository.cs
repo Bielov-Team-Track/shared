@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Shared.DataAccess.Repositories.Interfaces;
@@ -68,27 +67,27 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
         return await query.Where(predicate).ToListAsync();
     }
 
-    public virtual async Task<T> AddAsync(T entity)
+    public virtual void Add(T entity)
     {
-        await _dbSet.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        _dbSet.Add(entity);
     }
 
-    public virtual async Task<T> UpdateAsync(T entity)
+    public virtual void Update(T entity)
     {
         _dbSet.Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
     }
 
-    public virtual async Task DeleteAsync(Guid id)
+    public virtual void Delete(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
+
+    public virtual async Task DeleteByIdAsync(Guid id)
     {
         var entity = await GetByIdAsync(id);
         if (entity != null)
         {
             _dbSet.Remove(entity);
-            await _context.SaveChangesAsync();
         }
     }
 
@@ -136,11 +135,6 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
             await transaction.RollbackAsync();
             throw;
         }
-    }
-
-    public void Update(T entity)
-    {
-        _dbSet.Update(entity);
     }
 
     public async Task SaveChangesAsync()

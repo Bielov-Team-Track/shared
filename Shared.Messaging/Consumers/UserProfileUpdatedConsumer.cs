@@ -26,12 +26,14 @@ namespace Shared.Messaging.Consumers
                 existingProfile.ImageUrl = userProfile.ImageUrl;
                 existingProfile.Email = userProfile.Email;
                 existingProfile.DateOfBirth = userProfile.DateOfBirth;
-                await _repository.UpdateAsync(existingProfile);
+                _repository.Update(existingProfile);
             }
             else
             {
-                await _repository.AddAsync(userProfile);
+                _repository.Add(userProfile);
             }
+
+            await _repository.SaveChangesAsync();
         }
     }
 }
