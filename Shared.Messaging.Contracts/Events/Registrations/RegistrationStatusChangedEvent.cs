@@ -9,6 +9,7 @@ public record RegistrationStatusChangedEvent : INotificationEvent
     public required Guid RegistrationId { get; init; }
     public required Guid ClubId { get; init; }
     public required string ClubName { get; init; }
+    public string? ClubLogoUrl { get; set; }
     public required string OldStatus { get; init; }
     public required string NewStatus { get; init; }
     public string? PublicNote { get; init; }

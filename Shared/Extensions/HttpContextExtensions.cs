@@ -9,7 +9,7 @@ namespace Shared.Extensions
         {
             var identity = context.User.Identity as ClaimsIdentity;
 
-            var userId = identity.Claims?.FirstOrDefault(x => x.Type == "UserId")?.Value;
+            var userId = identity?.Claims?.FirstOrDefault(x => x.Type == "UserId")?.Value;
 
             return userId != null;
         }
