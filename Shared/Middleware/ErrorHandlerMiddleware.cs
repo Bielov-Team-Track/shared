@@ -81,7 +81,7 @@ public class ErrorHandlerMiddleware
     private (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleUnexpectedException(Exception ex)
     {
         // In development, include stack trace in error details
-        object errorDetails = null;
+        object? errorDetails = null;
         if (_environment.IsDevelopment())
         {
             errorDetails = new
