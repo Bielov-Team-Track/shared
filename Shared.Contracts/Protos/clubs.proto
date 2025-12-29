@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shared.Contracts.Grpc";
+
+package clubs;
+
+service ClubsInternalService {
+  // Get members for notification purposes
+  rpc GetClubMembers (GetClubMembersRequest) returns (GetClubMembersResponse);
+  rpc GetGroupMembers (GetGroupMembersRequest) returns (GetGroupMembersResponse);
+  rpc GetTeamMembers (GetTeamMembersRequest) returns (GetTeamMembersResponse);
+
+  // For social-service: membership validation & suggestions
+  rpc GetMembership (GetMembershipRequest) returns (GetMembershipResponse);
+  rpc GetMemberSuggestions (GetMemberSuggestionsRequest) returns (GetMemberSuggestionsResponse);
+}
+
+// === Club Members ===
+
+message GetClubMembersRequest {
+  string club_id = 1;
+  repeated string exclude_user_ids = 2;
+}
+
+message GetClubMembersResponse {
+  repeated MemberInfo members = 1;
+}
+
+// === Group Members ===
+
+message GetGroupMembersRequest {
+  string group_id = 1;
+  repeated string exclude_user_ids = 2;
+}
+
+message GetGroupMembersResponse {
+  repeated MemberInfo members = 1;
+}
+
+// === Team Members ===
+
+message GetTeamMembersRequest {
+  string team_id = 1;
+  repeated string exclude_user_ids = 2;
+}
+
+message GetTeamMembersResponse {
+  repeated MemberInfo members = 1;
+}
+
+// === Membership Check ===
+
+message GetMembershipRequest {
+  string context_type = 1;  // Club, Group, Team
+  string context_id = 2;
+  string user_id = 3;
+}
+
+message GetMembershipResponse {
+  bool is_member = 1;
+  string role = 2;
+  bool can_post = 3;
+  bool can_comment = 4;
+}
+
+// === Member Suggestions ===
+
+message GetMemberSuggestionsRequest {
+  string context_type = 1;
+  string context_id = 2;
+  string query = 3;
+  int32 limit = 4;
+}
+
+message GetMemberSuggestionsResponse {
+  repeated MemberSuggestion suggestions = 1;
+}
+
+// === Common Messages ===
+
+message MemberInfo {
+  string user_id = 1;
+  string display_name = 2;
+  string role = 3;
+}
+
+message MemberSuggestion {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+}
