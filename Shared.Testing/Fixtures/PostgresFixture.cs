@@ -2,7 +2,7 @@
 
 namespace Shared.Testing.Fixtures;
 
-public class PostgresFixture : IAsyncLifetime
+public class PostgresFixture : IAsyncDisposable
 {
     private PostgreSqlContainer _container = null!;
 
@@ -20,7 +20,7 @@ public class PostgresFixture : IAsyncLifetime
         await _container.StartAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _container.DisposeAsync();
     }

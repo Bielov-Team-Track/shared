@@ -17,7 +17,6 @@ public abstract class IntegrationTestBase
         await PostgresFixture.InitializeAsync();
 
         DatabaseResetter = new DatabaseResetter(PostgresFixture.ConnectionString);
-        await DatabaseResetter.InitializeAsync();
     }
 
     [OneTimeTearDown]
