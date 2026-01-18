@@ -2,9 +2,9 @@
 
 namespace Shared.Exceptions
 {
-    public class EntityNotFoundException : BadRequestException
+    public class EntityNotFoundException : ExceptionWithStatusAndErrorCodes
     {
-        public EntityNotFoundException(string message, ErrorCodeEnum errorCode) : base(message, errorCode)
+        public EntityNotFoundException(string message, ErrorCodeEnum errorCode) : base(message, System.Net.HttpStatusCode.NotFound, errorCode)
         {
         }
     }

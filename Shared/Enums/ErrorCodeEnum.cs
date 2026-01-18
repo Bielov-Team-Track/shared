@@ -6,5 +6,6 @@
         Unauthorized = 1,
         InternalError = 2,
         EntityNotFound = 3,
+        Forbidden = 4,
     }
 }
