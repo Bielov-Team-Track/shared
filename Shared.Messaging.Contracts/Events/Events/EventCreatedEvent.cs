@@ -1,6 +1,6 @@
 using Shared.Models;
 
-namespace Shared.Messaging.Contracts.Events.Profiles;
+namespace Shared.Messaging.Contracts.Events.Events;
 
 public record EventCreatedEvent : IEvent
 {
