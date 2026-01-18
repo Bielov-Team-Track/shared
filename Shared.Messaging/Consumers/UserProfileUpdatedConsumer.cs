@@ -5,7 +5,7 @@ using Shared.Models;
 
 namespace Shared.Messaging.Consumers
 {
-    public class UserProfileUpdatedConsumer : IConsumer<UserProfileUpdatedEvent>
+    public class UserProfileUpdatedConsumer : IConsumer<EventCreatedEvent>
     {
         private readonly IRepository<UserProfile> _repository;
 
@@ -14,7 +14,7 @@ namespace Shared.Messaging.Consumers
             _repository = repository;
         }
 
-        public async Task Consume(ConsumeContext<UserProfileUpdatedEvent> context)
+        public async Task Consume(ConsumeContext<EventCreatedEvent> context)
         {
             var userProfile = context.Message.UserProfile;
 
