@@ -72,6 +72,11 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
         _dbSet.Add(entity);
     }
 
+    public virtual void AddRange(IEnumerable<T> entities)
+    {
+        _dbSet.AddRange(entities);
+    }
+
     public virtual void Update(T entity)
     {
         _dbSet.Update(entity);

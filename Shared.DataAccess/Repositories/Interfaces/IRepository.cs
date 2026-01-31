@@ -11,6 +11,7 @@ public interface IRepository<T> where T : class
     Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate);
     Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
     void Add(T entity);
+    void AddRange(IEnumerable<T> entities);
     void Update(T entity);
     void Delete(T entity);
     Task DeleteByIdAsync(Guid id);
