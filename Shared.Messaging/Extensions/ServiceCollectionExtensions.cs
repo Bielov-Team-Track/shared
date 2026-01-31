@@ -20,6 +20,11 @@ public static class ServiceCollectionExtensions
         {
             configureBus?.Invoke(x);
 
+            if (!string.IsNullOrEmpty(options.ServicePrefix))
+            {
+                x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(options.ServicePrefix, false));
+            }
+
             x.AddEntityFrameworkOutbox<TDbContext>(o =>
             {
                 o.UsePostgres();

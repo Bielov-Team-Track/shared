@@ -1,4 +1,5 @@
-﻿using Shared.Enums.Social;
+﻿using Shared.Enums;
+using Shared.Enums.Social;
 
 namespace Shared.Messaging.Contracts.Events.Social.Mentions;
 
