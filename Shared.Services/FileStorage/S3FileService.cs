@@ -30,5 +30,54 @@ namespace Shared.Services.FileStorage
 
             return await _s3Client.GetPreSignedURLAsync(request);
         }
+
+        public async Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket)
+        {
+            // Copy to new location
+            var copyRequest = new CopyObjectRequest
+            {
+                SourceBucket = bucket,
+                SourceKey = sourceKey,
+                DestinationBucket = bucket,
+                DestinationKey = destinationKey
+            };
+            await _s3Client.CopyObjectAsync(copyRequest);
+
+            // Delete from old location
+            var deleteRequest = new DeleteObjectRequest
+            {
+                BucketName = bucket,
+                Key = sourceKey
+            };
+            await _s3Client.DeleteObjectAsync(deleteRequest);
+        }
+
+        public async Task DeleteObjectAsync(string key, string bucket)
+        {
+            var request = new DeleteObjectRequest
+            {
+                BucketName = bucket,
+                Key = key
+            };
+            await _s3Client.DeleteObjectAsync(request);
+        }
+
+        public async Task<bool> ObjectExistsAsync(string key, string bucket)
+        {
+            try
+            {
+                var request = new GetObjectMetadataRequest
+                {
+                    BucketName = bucket,
+                    Key = key
+                };
+                await _s3Client.GetObjectMetadataAsync(request);
+                return true;
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
+        }
     }
 }
