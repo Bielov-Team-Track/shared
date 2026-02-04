@@ -54,6 +54,20 @@ public class ProblemDetailsResponse
         };
     }
 
+    public static ProblemDetailsResponse ValidationError(string detail, List<FieldError> errors)
+    {
+        return new ProblemDetailsResponse(
+            type: "validation-error",
+            title: "Validation Failed",
+            status: 400,
+            code: "VALIDATION_ERROR",
+            detail: detail
+        )
+        {
+            Errors = errors
+        };
+    }
+
     public static ProblemDetailsResponse BadRequest(string code, string detail)
     {
         return new ProblemDetailsResponse(
@@ -109,6 +123,17 @@ public class ProblemDetailsResponse
         );
     }
 
+    public static ProblemDetailsResponse Conflict(string code, string detail)
+    {
+        return new ProblemDetailsResponse(
+            type: "conflict",
+            title: "Conflict",
+            status: 409,
+            code: code,
+            detail: detail
+        );
+    }
+
     public static ProblemDetailsResponse InternalError(string detail)
     {
         return new ProblemDetailsResponse(
@@ -118,6 +143,20 @@ public class ProblemDetailsResponse
             code: "INTERNAL_ERROR",
             detail: detail
         );
+    }
+
+    public static ProblemDetailsResponse InternalError(string detail, DebugInfo? debug)
+    {
+        return new ProblemDetailsResponse(
+            type: "internal-error",
+            title: "Internal Server Error",
+            status: 500,
+            code: "INTERNAL_ERROR",
+            detail: detail
+        )
+        {
+            Debug = debug
+        };
     }
 }
 

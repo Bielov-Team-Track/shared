@@ -23,12 +23,13 @@ public static class HttpClientResilienceExtensions
         string baseAddress,
         Action<HttpStandardResilienceOptions>? configureResilience = null)
     {
-        return services.AddHttpClient(name, client =>
+        var builder = services.AddHttpClient(name, client =>
         {
             client.BaseAddress = new Uri(baseAddress);
             client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .AddStandardResilienceHandler(options =>
+        });
+
+        builder.AddStandardResilienceHandler(options =>
         {
             // Configure retry policy
             options.Retry.MaxRetryAttempts = 3;
@@ -55,6 +56,8 @@ public static class HttpClientResilienceExtensions
             // Apply custom configuration if provided
             configureResilience?.Invoke(options);
         });
+
+        return builder;
     }
 
     /// <summary>
@@ -66,12 +69,13 @@ public static class HttpClientResilienceExtensions
         string name,
         string baseAddress)
     {
-        return services.AddHttpClient(name, client =>
+        var builder = services.AddHttpClient(name, client =>
         {
             client.BaseAddress = new Uri(baseAddress);
             client.Timeout = TimeSpan.FromSeconds(15);
-        })
-        .AddStandardResilienceHandler(options =>
+        });
+
+        builder.AddStandardResilienceHandler(options =>
         {
             // Internal services should be fast - use shorter timeouts
             options.Retry.MaxRetryAttempts = 2;
@@ -88,5 +92,7 @@ public static class HttpClientResilienceExtensions
             options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
             options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
         });
+
+        return builder;
     }
 }
