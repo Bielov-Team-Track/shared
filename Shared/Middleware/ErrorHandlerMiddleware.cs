@@ -1,13 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Net.Mime;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
+using Shared.DTOs.Errors;
 using Shared.Enums;
 using Shared.Exceptions;
-using Shared.Extensions;
 
 namespace Shared.Middleware;
 
@@ -17,6 +16,12 @@ public class ErrorHandlerMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlerMiddleware> _logger;
     private readonly IHostEnvironment _environment;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
 
     public ErrorHandlerMiddleware(
         RequestDelegate next,
@@ -40,96 +45,93 @@ public class ErrorHandlerMiddleware
         }
     }
 
-    protected virtual async Task HandleExceptionAsync(HttpContext context, Exception ex)
+    private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
-        // Log the exception
         var requestPath = context.Request.Path;
         var requestMethod = context.Request.Method;
 
-        var (statusCode, response) = ex switch
+        var response = ex switch
         {
-            ExceptionWithResult<object> => HandleExceptionWithResult(ex),
-            ExceptionWithStatusAndErrorCodes exWithCodes => HandleExceptionWithStatusAndErrorCodes(exWithCodes, context),
+            ValidationException validationEx => HandleValidationException(validationEx),
+            ExceptionWithStatusAndErrorCodes exWithCodes => HandleExceptionWithStatusAndErrorCodes(exWithCodes),
+            BadHttpRequestException badRequest => HandleBadHttpRequestException(badRequest),
             _ => HandleUnexpectedException(ex)
         };
 
         // Log based on status code severity
-        if (statusCode >= HttpStatusCode.InternalServerError)
+        if (response.Status >= 500)
         {
             _logger.LogError(ex,
-                "Unhandled exception occurred. Method: {Method}, Path: {Path}, StatusCode: {StatusCode}, Message: {Message}",
-                requestMethod, requestPath, (int)statusCode, ex.Message);
+                "Unhandled exception. Method: {Method}, Path: {Path}, Status: {Status}, Code: {Code}",
+                requestMethod, requestPath, response.Status, response.Code);
         }
-        else if (statusCode >= HttpStatusCode.BadRequest)
+        else if (response.Status >= 400)
         {
             _logger.LogWarning(
-                "Client error occurred. Method: {Method}, Path: {Path}, StatusCode: {StatusCode}, Message: {Message}",
-                requestMethod, requestPath, (int)statusCode, ex.Message);
+                "Client error. Method: {Method}, Path: {Path}, Status: {Status}, Code: {Code}, Detail: {Detail}",
+                requestMethod, requestPath, response.Status, response.Code, response.Detail);
         }
 
-        context.Response.StatusCode = (int)statusCode;
-        context.Response.ContentType = context.Request.Headers["Accept"] == MediaTypeNames.Application.Xml
-            ? MediaTypeNames.Application.Xml
-            : MediaTypeNames.Application.Json;
+        context.Response.StatusCode = response.Status;
+        context.Response.ContentType = "application/problem+json";
 
-        var result = JsonSerializer.Serialize(response,
-            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        await context.Response.WriteAsync(result);
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
     }
 
-    private (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleUnexpectedException(Exception ex)
+    private static ProblemDetailsResponse HandleValidationException(ValidationException ex)
     {
-        // In development, include stack trace in error details
-        object? errorDetails = null;
+        return ProblemDetailsResponse.ValidationError(ex.Message, ex.FieldErrors);
+    }
+
+    private static ProblemDetailsResponse HandleExceptionWithStatusAndErrorCodes(ExceptionWithStatusAndErrorCodes ex)
+    {
+        var statusCode = (int)ex.StatusCode;
+        var stringCode = ex.ErrorCode.ToStringCode();
+
+        return statusCode switch
+        {
+            400 => ProblemDetailsResponse.BadRequest(stringCode, ex.Message),
+            401 => ProblemDetailsResponse.Unauthorized(stringCode, ex.Message),
+            403 => ProblemDetailsResponse.Forbidden(ex.Message),
+            404 => ProblemDetailsResponse.NotFound(stringCode, ex.Message),
+            409 => ProblemDetailsResponse.Conflict(stringCode, ex.Message),
+            _ => new ProblemDetailsResponse
+            {
+                Type = $"https://api.volleyspike.app/errors/{stringCode.ToLowerInvariant()}",
+                Title = ex.ErrorCode.ToTitle(),
+                Status = statusCode,
+                Code = stringCode,
+                Detail = ex.Message
+            }
+        };
+    }
+
+    private ProblemDetailsResponse HandleBadHttpRequestException(BadHttpRequestException ex)
+    {
+        // Handle .NET built-in bad request errors (JSON parsing, etc.)
+        return ProblemDetailsResponse.BadRequest(
+            "BAD_REQUEST",
+            _environment.IsDevelopment() ? ex.Message : "The request could not be processed."
+        );
+    }
+
+    private ProblemDetailsResponse HandleUnexpectedException(Exception ex)
+    {
+        DebugInfo? debug = null;
         if (_environment.IsDevelopment())
         {
-            errorDetails = new
+            debug = new DebugInfo
             {
-                exceptionType = ex.GetType().Name,
-                stackTrace = ex.StackTrace,
-                innerException = ex.InnerException?.Message
+                ExceptionType = ex.GetType().Name,
+                StackTrace = ex.StackTrace,
+                InnerException = ex.InnerException?.Message
             };
         }
 
-        var errorMessage = _environment.IsDevelopment()
+        var message = _environment.IsDevelopment()
             ? ex.Message
             : "An unexpected error occurred. Please try again later.";
 
-        return (HttpStatusCode.InternalServerError,
-            new BaseResponseWithErrorDetailsDto<object, object>(ErrorCodeEnum.InternalError, errorMessage, errorDetails));
-    }
-
-    private static (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleExceptionWithStatusAndErrorCodes(
-        ExceptionWithStatusAndErrorCodes exception,
-        HttpContext context)
-    {
-        var statusCode = exception.StatusCode;
-
-        UnauthorizedStatusOverride(statusCode, exception.ErrorCode, context);
-
-        return (statusCode, new BaseResponseWithErrorDetailsDto<object, object>(exception.ErrorCode, exception.Message, exception.ErrorDetails));
-    }
-
-    private static (HttpStatusCode, BaseResponseWithErrorDetailsDto<object, object>) HandleExceptionWithResult(Exception ex)
-    {
-        return ex is not ExceptionWithResult<object> exception
-            ? (HttpStatusCode.InternalServerError, new BaseResponseWithErrorDetailsDto<object, object>(ErrorCodeEnum.InternalError, ex.Message))
-            : (exception.StatusCode, new BaseResponseWithErrorDetailsDto<object, object>(exception.Result, exception.ErrorCode, exception.Message));
-    }
-
-    // please double-check as this code looks like not-working.
-    // in case we need handle error in exceptional cases (like return 401 status in case if user logged in but not found) 
-    private static void UnauthorizedStatusOverride(HttpStatusCode statusCode,
-        ErrorCodeEnum errorCodeEnum,
-        HttpContext context)
-    {
-        var errorsToOverride = new[]
-        {
-            ErrorCodeEnum.Unauthorized
-        };
-
-        if (errorsToOverride.Contains(errorCodeEnum) && context.IsUserLoggedIn())
-            statusCode = HttpStatusCode.Unauthorized;
+        return ProblemDetailsResponse.InternalError(message, debug);
     }
 }
