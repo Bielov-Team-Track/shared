@@ -79,5 +79,10 @@ namespace Shared.Services.FileStorage
                 return false;
             }
         }
+
+        public string GetPublicUrl(string key)
+        {
+            return $"{_s3Settings.PublicBaseUrl.TrimEnd('/')}/{key.TrimStart('/')}";
+        }
     }
 }

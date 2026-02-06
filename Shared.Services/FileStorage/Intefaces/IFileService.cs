@@ -18,5 +18,10 @@
         /// Checks if an object exists in the bucket.
         /// </summary>
         Task<bool> ObjectExistsAsync(string key, string bucket);
+
+        /// <summary>
+        /// Gets the public URL for an object. Uses configured base URL (S3 or CDN).
+        /// </summary>
+        string GetPublicUrl(string key);
     }
 }
