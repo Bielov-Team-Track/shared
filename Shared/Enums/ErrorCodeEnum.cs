@@ -43,5 +43,28 @@
         PaymentFailed = 500,
         PaymentRequired = 501,
         RefundFailed = 502,
+
+        // Family/Guardian (600-699)
+        HouseholdNotFound = 600,
+        NotHouseholdMember = 601,
+        NotGuardian = 602,
+        NotPrimaryGuardian = 603,
+        MinorAlreadyInHousehold = 604,
+        InvalidHouseholdRole = 605,
+        GuardianRemovalPending = 606,
+        ConsentNotFound = 607,
+        ConsentAlreadyGranted = 608,
+        ConsentExpired = 609,
+        ConsentRevoked = 610,
+        InvalidVerificationMethod = 611,
+        VerificationFailed = 612,
+        MinorTooYoungForCredentials = 613,
+        MinorAlreadyHasCredentials = 614,
+        DeletionRequestPending = 615,
+        StepUpAuthRequired = 616,
+        GuardianAccessDenied = 617,
+        ActingAsValidationFailed = 618,
+        ConsentLockActive = 619,
+        InviteLimitExceeded = 620,
     }
 }
