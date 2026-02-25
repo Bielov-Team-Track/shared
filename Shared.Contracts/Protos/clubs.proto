@@ -61,6 +61,7 @@ message GetMembershipResponse {
   string role = 2;
   bool can_post = 3;
   bool can_comment = 4;
+  bool can_view = 5;
 }
 
 // === Member Suggestions ===
