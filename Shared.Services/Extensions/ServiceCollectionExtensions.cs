@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
             .Validate(s => !string.IsNullOrEmpty(s.PublicBaseUrl) && Uri.TryCreate(s.PublicBaseUrl, UriKind.Absolute, out _),
                 "S3:PublicBaseUrl must be a valid absolute URL");
 
+
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IHashingService, HashingService>();
         services.AddScoped<IFileService, S3FileService>();
