@@ -26,6 +26,7 @@ namespace Shared.Messaging.Consumers
                 existingProfile.ImageUrl = userProfile.ImageUrl;
                 existingProfile.Email = userProfile.Email;
                 existingProfile.DateOfBirth = userProfile.DateOfBirth;
+                existingProfile.IsActive = userProfile.IsActive;
                 _repository.Update(existingProfile);
             }
             else

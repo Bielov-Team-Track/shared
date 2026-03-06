@@ -5,5 +5,6 @@ public enum ContextType
     None = 0,
     Club = 1,
     Group = 2,
-    Team = 3
+    Team = 3,
+    Event = 4
 }

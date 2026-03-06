@@ -15,6 +15,7 @@
         TokenInvalid = 102,
         EmailNotVerified = 103,
         AccountLocked = 104,
+        BelowMinimumAge = 105,
 
         // User/Profile (200-299)
         UserNotFound = 200,
