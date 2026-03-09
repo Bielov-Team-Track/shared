@@ -13,6 +13,15 @@ service ClubsInternalService {
   // For social-service: membership validation & suggestions
   rpc GetMembership (GetMembershipRequest) returns (GetMembershipResponse);
   rpc GetMemberSuggestions (GetMemberSuggestionsRequest) returns (GetMemberSuggestionsResponse);
+
+  // Get club names by IDs
+  rpc GetClubNames (GetClubNamesRequest) returns (GetClubNamesResponse);
+
+  // For payments-service: check user's roles in a club
+  rpc CheckUserClubRoles (CheckUserClubRolesRequest) returns (CheckUserClubRolesResponse);
+
+  // For coaching-service: skill matrix data
+  rpc GetSkillMatrix (GetSkillMatrixRequest) returns (GetSkillMatrixResponse);
 }
 
 // === Club Members ===
@@ -77,6 +86,22 @@ message GetMemberSuggestionsResponse {
   repeated MemberSuggestion suggestions = 1;
 }
 
+// === Club Names ===
+
+message GetClubNamesRequest {
+  repeated string club_ids = 1;
+}
+
+message GetClubNamesResponse {
+  repeated ClubNameInfo clubs = 1;
+}
+
+message ClubNameInfo {
+  string club_id = 1;
+  string name = 2;
+  string logo_url = 3;
+}
+
 // === Common Messages ===
 
 message MemberInfo {
@@ -89,4 +114,43 @@ message MemberSuggestion {
   string user_id = 1;
   string display_name = 2;
   string avatar_url = 3;
+}
+
+// === CheckUserClubRoles ===
+
+message CheckUserClubRolesRequest {
+  string user_id = 1;
+  string club_id = 2;
+}
+
+message CheckUserClubRolesResponse {
+  bool is_member = 1;
+  repeated string roles = 2;  // Owner, Admin, Treasurer, HeadCoach, Coach, Member
+}
+
+// === Skill Matrix ===
+
+message GetSkillMatrixRequest {
+  string club_id = 1;
+}
+
+message GetSkillMatrixResponse {
+  bool found = 1;
+  string matrix_id = 2;
+  repeated MatrixSkillProto skills = 3;
+}
+
+message MatrixSkillProto {
+  string skill_id = 1;
+  string name = 2;
+  string skill_key = 3;
+  repeated SkillBandProto bands = 4;
+}
+
+message SkillBandProto {
+  string id = 1;
+  int32 order = 2;
+  string label = 3;
+  double min_score = 4;
+  double max_score = 5;
 }

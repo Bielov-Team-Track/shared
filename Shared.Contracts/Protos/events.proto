@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shared.Contracts.Grpc";
+
+package events;
+
+service EventsInternalService {
+  rpc IsEventAdmin (IsEventAdminRequest) returns (IsEventAdminResponse);
+  rpc IsEventParticipant (IsEventParticipantRequest) returns (IsEventParticipantResponse);
+  rpc GetEventParticipants (GetEventParticipantsRequest) returns (GetEventParticipantsResponse);
+  rpc GetEventContext (GetEventContextRequest) returns (GetEventContextResponse);
+  rpc GetEventPaymentInfo (GetEventPaymentInfoRequest) returns (GetEventPaymentInfoResponse);
+  rpc GetParticipantPaymentInfo (GetParticipantPaymentInfoRequest) returns (GetParticipantPaymentInfoResponse);
+  rpc GetParticipantPaymentAmount (GetParticipantPaymentAmountRequest) returns (GetParticipantPaymentAmountResponse);
+  rpc GetTeamPaymentInfo (GetTeamPaymentInfoRequest) returns (GetTeamPaymentInfoResponse);
+  rpc CreateParticipantForPayToJoin (CreateParticipantForPayToJoinRequest) returns (CreateParticipantForPayToJoinResponse);
+}
+
+message IsEventAdminRequest {
+  string event_id = 1;
+  string user_id = 2;
+}
+
+message IsEventAdminResponse {
+  bool is_admin = 1;
+  string role = 2;
+}
+
+message IsEventParticipantRequest {
+  string event_id = 1;
+  string user_id = 2;
+}
+
+message IsEventParticipantResponse {
+  bool is_participant = 1;
+  bool event_exists = 2;
+}
+
+message GetEventParticipantsRequest {
+  string event_id = 1;
+  string role_filter = 2;
+  string status_filter = 3;
+}
+
+message GetEventParticipantsResponse {
+  repeated ParticipantInfo participants = 1;
+}
+
+message ParticipantInfo {
+  string user_id = 1;
+  string display_name = 2;
+  string role = 3;
+  string status = 4;
+  string avatar_url = 5;
+}
+
+message GetEventContextRequest {
+  string event_id = 1;
+}
+
+message GetEventContextResponse {
+  bool found = 1;
+  string event_type = 2;       // "TrainingSession", "Match", "Trial", "Evaluation", etc.
+  string context_type = 3;     // "None", "Club", "Group", "Team"
+  string context_id = 4;       // GUID of the club/group/team, empty if None
+}
+
+// === GetEventPaymentInfo ===
+
+// Returns event data needed for payment operations
+message GetEventPaymentInfoRequest {
+  string event_id = 1;
+  string user_id = 2;          // optional - if provided, returns user-specific participant info
+}
+
+message GetEventPaymentInfoResponse {
+  string event_id = 1;
+  string event_name = 2;
+  string organizer_user_id = 3;
+  bool is_canceled = 4;
+  EventPaymentConfig payment_config = 5;
+  int32 capacity_limit = 6;
+  int32 active_participant_count = 7;
+  repeated string all_participant_ids = 8;
+  // User-specific fields (populated when user_id is provided)
+  string user_participant_id = 9;   // empty if user is not a participant
+  string user_participant_status = 10;
+}
+
+message EventPaymentConfig {
+  string pricing_model = 1;    // "Individual", "Team", "Event"
+  string cost = 2;             // string representation of decimal
+  bool pay_to_join = 3;
+  int32 min_units = 4;
+  int32 payment_methods = 5;   // bitmask: None=0, Cash=1, Card=2
+}
+
+// === GetParticipantPaymentInfo ===
+
+// Returns participant + event data for a specific participant
+message GetParticipantPaymentInfoRequest {
+  string participant_id = 1;
+}
+
+message GetParticipantPaymentInfoResponse {
+  string participant_id = 1;
+  string user_id = 2;
+  string event_id = 3;
+  string status = 4;           // participant status
+  bool is_deleted = 5;
+  string organizer_user_id = 6;
+  EventPaymentConfig payment_config = 7;
+}
+
+// === GetParticipantPaymentAmount ===
+
+// Returns pre-computed payment amount
+message GetParticipantPaymentAmountRequest {
+  string participant_id = 1;   // use this OR event_id + user_id
+  string event_id = 2;        // for pay-to-join (no participant yet)
+  string user_id = 3;         // for pay-to-join
+}
+
+message GetParticipantPaymentAmountResponse {
+  string amount = 1;           // string representation of decimal
+  string currency = 2;
+}
+
+// === GetTeamPaymentInfo ===
+
+// Returns team data for payment queries
+message GetTeamPaymentInfoRequest {
+  string team_id = 1;
+  string requesting_user_id = 2;
+}
+
+message GetTeamPaymentInfoResponse {
+  string team_id = 1;
+  string captain_id = 2;
+  string event_id = 3;
+  bool is_authorized = 4;      // true if requesting user is captain or event admin
+  repeated string participant_ids = 5;
+}
+
+// === CreateParticipantForPayToJoin ===
+
+// Advisory-locked participant creation
+message CreateParticipantForPayToJoinRequest {
+  string event_id = 1;
+  string user_id = 2;
+  string payment_intent_id = 3;
+  string amount_paid = 4;      // string representation of decimal
+}
+
+message CreateParticipantForPayToJoinResponse {
+  bool success = 1;
+  string participant_id = 2;
+  string failure_reason = 3;
+  bool requires_refund = 4;
+}

@@ -11,4 +11,8 @@ public class EventInvitationCreatedEvent : IEvent
     public string EventName { get; set; }
     public string EventLocationName { get; set; }
     public DateTime EventDateTime { get; set; }
+
+    public Guid? InvitedByUserId { get; set; }
+    public string? InviterName { get; set; }
+    public string? InviterPhotoUrl { get; set; }
 }

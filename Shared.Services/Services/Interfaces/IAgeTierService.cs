@@ -9,6 +9,4 @@ public interface IAgeTierService
     int CalculateAge(DateTime dateOfBirth, DateTime? asOfDate = null);
     bool IsMinor(DateTime dateOfBirth, DateTime? asOfDate = null);
     bool CanHaveCredentials(DateTime dateOfBirth, DateTime? asOfDate = null);
-    bool IsGuardianRequired(AgeTier tier);
-    bool IsGuardianOptional(AgeTier tier);
 }

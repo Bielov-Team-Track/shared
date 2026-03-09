@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shared.Contracts.Grpc";
+
+package payments;
+
+service PaymentsInternalService {
+  // Check if user has an active subscription for a club
+  rpc CheckActiveSubscription (CheckActiveSubscriptionRequest) returns (CheckActiveSubscriptionResponse);
+
+  // Get payment status for an event participant
+  rpc GetPaymentStatus (GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
+
+  // Create a payment record for an event participant
+  rpc CreatePaymentForParticipant (CreatePaymentForParticipantRequest) returns (CreatePaymentForParticipantResponse);
+
+  // Batch payment status lookup for multiple participants
+  rpc GetPaymentStatusBatch (GetPaymentStatusBatchRequest) returns (GetPaymentStatusBatchResponse);
+}
+
+// === CheckActiveSubscription ===
+
+message CheckActiveSubscriptionRequest {
+  string user_id = 1;
+  string club_id = 2;
+}
+
+message CheckActiveSubscriptionResponse {
+  bool has_active_subscription = 1;
+  string subscription_id = 2;       // empty if no active subscription
+  string plan_name = 3;             // empty if no active subscription
+}
+
+// === GetPaymentStatus ===
+
+message GetPaymentStatusRequest {
+  string event_participant_id = 1;
+}
+
+message GetPaymentStatusResponse {
+  bool found = 1;
+  string payment_id = 2;
+  string status = 3;                // Pending, Completed, Failed, Refunded
+  double amount = 4;
+  string currency = 5;
+  string paid_at = 6;               // ISO 8601 or empty
+}
+
+// === CreatePaymentForParticipant ===
+
+message CreatePaymentForParticipantRequest {
+  string event_participant_id = 1;
+  double amount = 2;
+  string currency = 3;
+  string payment_provider = 4;      // "stripe" or "manual"
+}
+
+message CreatePaymentForParticipantResponse {
+  string payment_id = 1;
+  string status = 2;
+}
+
+// === GetPaymentStatusBatch ===
+
+// Batch payment status lookup
+// Maximum 500 entries per request. Server returns INVALID_ARGUMENT if exceeded.
+message GetPaymentStatusBatchRequest {
+  repeated string event_participant_ids = 1;
+}
+
+message GetPaymentStatusBatchResponse {
+  map<string, PaymentStatusEntry> statuses = 1;
+}
+
+message PaymentStatusEntry {
+  bool found = 1;
+  string payment_id = 2;
+  string status = 3;
+  string amount = 4;           // string representation of decimal (use decimal.Parse/ToString)
+  string currency = 5;
+  string paid_at = 6;
+}
