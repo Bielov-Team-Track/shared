@@ -67,5 +67,9 @@
         ActingAsValidationFailed = 618,
         ConsentLockActive = 619,
         InviteLimitExceeded = 620,
+        ConsentCooldownActive = 621,
+        CannotRemovePrimaryGuardian = 622,
+        HouseholdHasMinors = 623,
+        InvalidGuardianRole = 624,
     }
 }
