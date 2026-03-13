@@ -1,10 +1,11 @@
 ﻿
 namespace Shared.Messaging.Contracts.Events.Events;
 
-public class EventInvitationCreatedEvent : IEvent
+public class EventInvitationCreatedEvent : INotificationEvent
 {
     public Guid EventId { get; init; } = Guid.NewGuid();
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+    public Guid UserId => InvitedUserId;
     public Guid InvitedUserId { get; set; }
     public Guid InvitationEventId { get; set; }
 
