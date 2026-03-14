@@ -29,10 +29,10 @@ namespace Shared.Services.FileStorage
                 ContentType = contentType
             };
 
-            if (!string.IsNullOrEmpty(cacheControl))
-            {
-                request.Headers["Cache-Control"] = cacheControl;
-            }
+            // Note: Cache-Control is NOT included in presigned URL signing because
+            // browsers may strip or empty it on cross-origin PUT requests, causing
+            // SignatureDoesNotMatch errors. Cache-Control is set post-upload via
+            // MoveObjectAsync or bucket-level policies instead.
 
             return await _s3Client.GetPreSignedURLAsync(request);
         }
