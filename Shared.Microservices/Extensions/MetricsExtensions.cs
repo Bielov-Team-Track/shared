@@ -29,10 +29,13 @@ public static class MetricsExtensions
     /// </summary>
     public static IApplicationBuilder UsePrometheusMetrics(this IApplicationBuilder app)
     {
-        app.UseHttpMetrics(options =>
-        {
-            options.ReduceStatusCodeCardinality();
-        });
+        app.UseWhen(
+            context => !context.Request.Path.StartsWithSegments("/hubs"),
+            branch => branch.UseHttpMetrics(options =>
+            {
+                options.ReduceStatusCodeCardinality();
+            })
+        );
 
         return app;
     }
