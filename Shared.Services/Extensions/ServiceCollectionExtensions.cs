@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IHashingService, HashingService>();
         services.AddScoped<IFileService, S3FileService>();
+        services.AddScoped<IAgeTierService, AgeTierService>();
         services.AddAWSService<IAmazonSimpleEmailServiceV2>();
         services.AddAWSService<IAmazonS3>();
 
