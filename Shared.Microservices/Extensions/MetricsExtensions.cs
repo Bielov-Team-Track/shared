@@ -44,9 +44,11 @@ public static class MetricsExtensions
                    ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS")
                    ?? "http://+:5000";
 
+        // Take the first URL (before any semicolons) and extract its port
+        var firstUrl = urls.Split(';')[0].Trim();
         var port = 5000;
-        var lastColon = urls.LastIndexOf(':');
-        if (lastColon >= 0 && int.TryParse(urls[(lastColon + 1)..], out var parsed))
+        var lastColon = firstUrl.LastIndexOf(':');
+        if (lastColon >= 0 && int.TryParse(firstUrl[(lastColon + 1)..], out var parsed))
         {
             port = parsed;
         }
