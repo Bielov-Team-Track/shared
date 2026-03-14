@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sentry.AspNetCore;
 
 namespace Shared.Logging.Extensions;
 
@@ -7,26 +9,31 @@ public static class WebHostBuilderExtensions
 {
     /// <summary>
     /// Configures Sentry error tracking on the web host.
-    /// Reads DSN from Configuration["Sentry:Dsn"]. If no DSN is set, Sentry is disabled.
-    /// Call this in ConfigureWebHostDefaults alongside UseStartup.
+    /// Reads DSN from Configuration["Sentry:Dsn"] or env var Sentry__Dsn.
+    /// If no DSN is configured, Sentry is disabled automatically.
     /// </summary>
     public static IWebHostBuilder UseSharedSentry(this IWebHostBuilder builder)
     {
-        return builder.UseSentry(options =>
-        {
-            // Default to empty string (disables Sentry) when no DSN is configured.
-            // This prevents ArgumentNullException in test/local environments.
-            if (string.IsNullOrEmpty(options.Dsn))
+        return builder
+            .UseSentry(options =>
             {
-                options.Dsn = "";
-                return;
-            }
-
-            options.SendDefaultPii = false;
-            options.AttachStacktrace = true;
-            options.MinimumBreadcrumbLevel = LogLevel.Information;
-            options.MinimumEventLevel = LogLevel.Error;
-            options.TracesSampleRate = 0.2;
-        });
+                options.SendDefaultPii = false;
+                options.AttachStacktrace = true;
+                options.MinimumBreadcrumbLevel = LogLevel.Information;
+                options.MinimumEventLevel = LogLevel.Error;
+                options.TracesSampleRate = 0.2;
+            })
+            .ConfigureServices(services =>
+            {
+                // PostConfigure runs AFTER config binding, so DSN from env/config is available.
+                // If still null (no DSN configured), set to empty string to disable gracefully.
+                services.PostConfigure<SentryAspNetCoreOptions>(options =>
+                {
+                    if (string.IsNullOrEmpty(options.Dsn))
+                    {
+                        options.Dsn = "";
+                    }
+                });
+            });
     }
 }
