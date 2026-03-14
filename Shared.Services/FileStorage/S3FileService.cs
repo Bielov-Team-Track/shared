@@ -17,7 +17,8 @@ namespace Shared.Services.FileStorage
             _s3Settings = s3Settings.Value;
         }
 
-        public async Task<string> GetPresignedUploadLink(string fileName, string folder, string contentType)
+        public async Task<string> GetPresignedUploadLink(string fileName, string folder, string contentType,
+            string? cacheControl = null)
         {
             var request = new GetPreSignedUrlRequest
             {
@@ -28,10 +29,16 @@ namespace Shared.Services.FileStorage
                 ContentType = contentType
             };
 
+            if (!string.IsNullOrEmpty(cacheControl))
+            {
+                request.Headers["Cache-Control"] = cacheControl;
+            }
+
             return await _s3Client.GetPreSignedURLAsync(request);
         }
 
-        public async Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket)
+        public async Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket,
+            string? cacheControl = null)
         {
             // Copy to new location
             var copyRequest = new CopyObjectRequest
@@ -41,6 +48,13 @@ namespace Shared.Services.FileStorage
                 DestinationBucket = bucket,
                 DestinationKey = destinationKey
             };
+
+            if (!string.IsNullOrEmpty(cacheControl))
+            {
+                copyRequest.MetadataDirective = S3MetadataDirective.REPLACE;
+                copyRequest.Headers["Cache-Control"] = cacheControl;
+            }
+
             await _s3Client.CopyObjectAsync(copyRequest);
 
             // Delete from old location

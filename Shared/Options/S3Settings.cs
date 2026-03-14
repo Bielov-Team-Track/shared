@@ -9,5 +9,10 @@
         /// </summary>
         public required string PublicBaseUrl { get; set; }
         public int PresignedUrlExpiryMinutes { get; set; }
+        /// <summary>
+        /// CloudFront distribution ID for cache invalidation.
+        /// Leave empty to disable invalidation (e.g., in development).
+        /// </summary>
+        public string? CloudFrontDistributionId { get; set; }
     }
 }

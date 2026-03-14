@@ -2,12 +2,15 @@
 {
     public interface IFileService
     {
-        Task<string> GetPresignedUploadLink(string fileName, string folder, string contentType);
+        Task<string> GetPresignedUploadLink(string fileName, string folder, string contentType,
+            string? cacheControl = null);
 
         /// <summary>
         /// Moves an object from one key to another within the same bucket.
+        /// Optionally sets Cache-Control metadata on the destination object.
         /// </summary>
-        Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket);
+        Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket,
+            string? cacheControl = null);
 
         /// <summary>
         /// Deletes an object from the bucket.
