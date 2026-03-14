@@ -14,6 +14,14 @@ public static class WebHostBuilderExtensions
     {
         return builder.UseSentry(options =>
         {
+            // Default to empty string (disables Sentry) when no DSN is configured.
+            // This prevents ArgumentNullException in test/local environments.
+            if (string.IsNullOrEmpty(options.Dsn))
+            {
+                options.Dsn = "";
+                return;
+            }
+
             options.SendDefaultPii = false;
             options.AttachStacktrace = true;
             options.MinimumBreadcrumbLevel = LogLevel.Information;
