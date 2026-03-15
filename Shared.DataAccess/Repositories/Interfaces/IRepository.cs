@@ -18,6 +18,7 @@ public interface IRepository<T> where T : class
     Task<bool> ExistsAsync(Guid id);
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
     IQueryable<T> Query();
+    IQueryable<T> QueryNoTracking();
     Task SaveChangesAsync();
 
     // Transaction support

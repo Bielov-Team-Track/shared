@@ -111,6 +111,11 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
         return _dbSet.AsQueryable();
     }
 
+    public virtual IQueryable<T> QueryNoTracking()
+    {
+        return _dbSet.AsNoTracking();
+    }
+
     public virtual async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
