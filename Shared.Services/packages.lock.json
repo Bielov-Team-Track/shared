@@ -2,6 +2,15 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
+      "AWSSDK.CloudFront": {
+        "type": "Direct",
+        "requested": "[4.0.4.2, )",
+        "resolved": "4.0.5",
+        "contentHash": "rT/KqoyYCmGqblfxh83rJZVSaDje0+6/jjyWwsNH+rPk8be+Rxzi7ShxzThXtdNHO0KFSGcrVbhV2eF0hGM5gw==",
+        "dependencies": {
+          "AWSSDK.Core": "[4.0.0.26, 5.0.0)"
+        }
+      },
       "AWSSDK.Core": {
         "type": "Direct",
         "requested": "[4.0.3.8, )",

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Shared.Enums;
@@ -18,10 +19,11 @@ public class JwtBlacklistMiddleware
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var jti = context.User.FindFirst("jti")?.Value;
-            if (!string.IsNullOrEmpty(jti))
+            // Check if all tokens for this user have been blacklisted (e.g., consent revocation)
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
             {
-                var blacklisted = await cache.GetStringAsync($"jwt_blacklist:{jti}");
+                var blacklisted = await cache.GetStringAsync($"jwt_blacklist:{userId}");
                 if (blacklisted != null)
                 {
                     throw new UnauthorizedException(
