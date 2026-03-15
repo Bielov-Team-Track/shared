@@ -1,0 +1,61 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
+namespace Shared.Microservices.Extensions;
+
+public static class TracingExtensions
+{
+    /// <summary>
+    /// Adds OpenTelemetry distributed tracing with OTLP export.
+    /// Automatically instruments ASP.NET Core requests and outbound HTTP calls.
+    /// The OTLP endpoint is configured via the OTEL_EXPORTER_OTLP_ENDPOINT env var
+    /// (read automatically by the OTel SDK). Set it in docker-compose or .env files.
+    /// Default (when unset): http://localhost:4317.
+    ///
+    /// Sampling: defaults to ParentBased(AlwaysOn) = 100% of traces are exported.
+    /// This is appropriate for low-to-moderate traffic. When traffic grows, configure
+    /// OTEL_TRACES_SAMPLER=parentbased_traceidratio and OTEL_TRACES_SAMPLER_ARG=0.1
+    /// (10%) via environment variables — no code changes needed.
+    ///
+    /// Note on HttpClientInstrumentation: outbound HTTP calls (including Stripe API,
+    /// S3 signed URLs) are captured as spans. Query string parameters may contain
+    /// tokens or signed URL credentials. The OTel SDK does NOT redact these by default.
+    /// This is an accepted risk for initial rollout — URL sanitization is tracked as
+    /// a future enhancement.
+    /// </summary>
+    public static IServiceCollection AddTracing(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string serviceName,
+        Action<TracerProviderBuilder>? configure = null)
+    {
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(
+                    serviceName: serviceName,
+                    serviceVersion: typeof(TracingExtensions).Assembly
+                        .GetName().Version?.ToString() ?? "1.0.0"))
+            .WithTracing(tracing =>
+            {
+                tracing
+                    .AddAspNetCoreInstrumentation(options =>
+                    {
+                        // Filters out health check endpoints and SignalR HTTP upgrade
+                        // requests. Note: once a WebSocket connection is established,
+                        // SignalR frames are not HTTP requests and are not traced by
+                        // ASP.NET Core instrumentation regardless of this filter.
+                        options.Filter = context =>
+                            !context.Request.Path.StartsWithSegments("/health") &&
+                            !context.Request.Path.StartsWithSegments("/hubs");
+                    })
+                    .AddHttpClientInstrumentation()
+                    .AddOtlpExporter();
+
+                configure?.Invoke(tracing);
+            });
+
+        return services;
+    }
+}
