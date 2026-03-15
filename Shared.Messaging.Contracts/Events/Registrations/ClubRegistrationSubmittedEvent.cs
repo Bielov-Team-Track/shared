@@ -8,6 +8,8 @@ public record ClubRegistrationSubmittedEvent : INotificationEvent
     public required Guid UserId { get; init; }
     public required Guid ClubId { get; init; }
     public required string ClubName { get; init; }
+    public required Guid RegistrationId { get; init; }
     public required Guid RequestedUserId { get; init; }
     public required string RequestedUserName { get; init; }
+    public string? RequestedUserImageUrl { get; init; }
 }
