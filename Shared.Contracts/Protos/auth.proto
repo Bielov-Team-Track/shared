@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shared.Contracts.Grpc";
+
+package auth;
+
+service AuthService {
+  rpc CreateStubUser (CreateStubUserRequest) returns (CreateStubUserResponse);
+}
+
+message CreateStubUserRequest {
+  string first_name = 1;
+  string last_name = 2;
+  string email = 3;
+  string phone_number = 4;
+  string created_by_user_id = 5;
+  string created_for_club_id = 6;
+}
+
+message CreateStubUserResponse {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  string error_code = 6;
+  // Note: no existing_user_id field — avoid leaking user IDs in error responses
+}
