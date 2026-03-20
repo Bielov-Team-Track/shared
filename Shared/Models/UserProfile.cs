@@ -10,4 +10,5 @@ public class UserProfile : BaseEntity
     public DateTime? DateOfBirth { get; set; }
     public bool IsActive { get; set; }
     public string? PhoneNumber { get; set; }
+    public bool IsEmailVerified { get; set; }
 }

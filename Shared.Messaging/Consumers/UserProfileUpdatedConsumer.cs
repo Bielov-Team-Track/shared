@@ -27,6 +27,7 @@ namespace Shared.Messaging.Consumers
                 existingProfile.Email = userProfile.Email;
                 existingProfile.DateOfBirth = userProfile.DateOfBirth;
                 existingProfile.IsActive = userProfile.IsActive;
+                existingProfile.IsEmailVerified = userProfile.IsEmailVerified;
                 _repository.Update(existingProfile);
             }
             else
