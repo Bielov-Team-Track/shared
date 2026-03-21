@@ -6,6 +6,7 @@ package auth;
 
 service AuthService {
   rpc CreateStubUser (CreateStubUserRequest) returns (CreateStubUserResponse);
+  rpc FindMatchingUsers (FindMatchingUsersRequest) returns (FindMatchingUsersResponse);
 }
 
 message CreateStubUserRequest {
@@ -25,4 +26,20 @@ message CreateStubUserResponse {
   string phone_number = 5;
   string error_code = 6;
   // Note: no existing_user_id field — avoid leaking user IDs in error responses
+}
+
+message FindMatchingUsersRequest {
+  string email = 1;
+  string phone_number = 2;
+}
+
+message MatchedUser {
+  string user_id = 1;
+  string email = 2;
+  string phone_number = 3;
+}
+
+message FindMatchingUsersResponse {
+  string match_type = 1;
+  repeated MatchedUser matches = 2;
 }
