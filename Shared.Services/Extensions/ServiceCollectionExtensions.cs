@@ -1,7 +1,9 @@
 using Amazon.CloudFront;
 using Amazon.S3;
 using Amazon.SimpleEmailV2;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Options;
 using Shared.Services.FileStorage;
@@ -14,19 +16,66 @@ namespace Shared.Services.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Backward-compatible overload for services that don't send email.
+    /// Always registers SES email service (never resolved by these services).
+    /// </summary>
     public static IServiceCollection AddSharedServices(this IServiceCollection services)
+    {
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddAWSService<IAmazonSimpleEmailServiceV2>();
+
+        return AddSharedServicesCore(services);
+    }
+
+    /// <summary>
+    /// Full overload for services that send email. Supports SMTP transport for staging/development.
+    /// </summary>
+    public static IServiceCollection AddSharedServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        var emailSection = configuration.GetSection("EmailSettings");
+
+        if (emailSection.Exists())
+        {
+            var emailSettings = emailSection.Get<EmailSettings>();
+            var useSmtp = emailSettings?.SmtpTransportEnabled == true
+                          && !string.IsNullOrWhiteSpace(emailSettings.SmtpHost);
+
+            if (useSmtp)
+            {
+                if (environment.IsProduction())
+                {
+                    throw new InvalidOperationException(
+                        "SMTP email transport must not be enabled in Production. " +
+                        "Remove EmailSettings__SmtpTransportEnabled or set it to false.");
+                }
+
+                services.AddScoped<IEmailService, SmtpEmailService>();
+            }
+            else
+            {
+                services.AddScoped<IEmailService, EmailService>();
+                services.AddAWSService<IAmazonSimpleEmailServiceV2>();
+            }
+        }
+
+        return AddSharedServicesCore(services);
+    }
+
+    private static IServiceCollection AddSharedServicesCore(IServiceCollection services)
     {
         services.AddOptions<S3Settings>()
             .BindConfiguration("S3")
             .Validate(s => !string.IsNullOrEmpty(s.PublicBaseUrl) && Uri.TryCreate(s.PublicBaseUrl, UriKind.Absolute, out _),
                 "S3:PublicBaseUrl must be a valid absolute URL");
 
-        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IHashingService, HashingService>();
         services.AddScoped<IFileService, S3FileService>();
         services.AddScoped<IAgeTierService, AgeTierService>();
         services.AddScoped<ICloudFrontService, CloudFrontService>();
-        services.AddAWSService<IAmazonSimpleEmailServiceV2>();
         services.AddAWSService<IAmazonS3>();
         services.AddAWSService<IAmazonCloudFront>();
 
