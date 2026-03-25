@@ -22,6 +22,9 @@ service ClubsInternalService {
 
   // For coaching-service: skill matrix data
   rpc GetSkillMatrix (GetSkillMatrixRequest) returns (GetSkillMatrixResponse);
+
+  // For auth-service: check if user is sole owner of any club
+  rpc CheckSoleOwnership (CheckSoleOwnershipRequest) returns (CheckSoleOwnershipResponse);
 }
 
 // === Club Members ===
@@ -153,4 +156,15 @@ message SkillBandProto {
   string label = 3;
   double min_score = 4;
   double max_score = 5;
+}
+
+// === Sole Ownership Check ===
+
+message CheckSoleOwnershipRequest {
+  string user_id = 1;
+}
+
+message CheckSoleOwnershipResponse {
+  bool is_sole_owner = 1;
+  repeated string club_names = 2;
 }
