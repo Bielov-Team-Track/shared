@@ -9,4 +9,5 @@ public record ClubInvitationDeclinedEvent : INotificationEvent
     public required Guid ClubId { get; init; }
     public required string ClubName { get; init; }
     public required string MemberName { get; init; }
+    public string? MemberImageUrl { get; init; }
 }
