@@ -30,7 +30,7 @@ namespace Shared.Messaging.Consumers
                 existingProfile.IsEmailVerified = userProfile.IsEmailVerified;
                 _repository.Update(existingProfile);
             }
-            else if (userProfile.IsActive)
+            else
             {
                 _repository.Add(userProfile);
             }

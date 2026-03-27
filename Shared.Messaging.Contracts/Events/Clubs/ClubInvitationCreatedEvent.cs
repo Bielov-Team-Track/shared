@@ -9,4 +9,5 @@ public record ClubInvitationCreatedEvent : INotificationEvent
     public required Guid ClubId { get; init; }
     public required string ClubName { get; init; }
     public required string InvitedByUserName { get; init; }
+    public required string InvitationToken { get; init; }
 }
