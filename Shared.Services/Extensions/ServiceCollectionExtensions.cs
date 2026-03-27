@@ -3,7 +3,6 @@ using Amazon.S3;
 using Amazon.SimpleEmailV2;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Options;
 using Shared.Services.FileStorage;
@@ -33,8 +32,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddSharedServices(
         this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment environment)
+        IConfiguration configuration)
     {
         var emailSection = configuration.GetSection("EmailSettings");
 
@@ -46,13 +44,6 @@ public static class ServiceCollectionExtensions
 
             if (useSmtp)
             {
-                if (environment.IsProduction())
-                {
-                    throw new InvalidOperationException(
-                        "SMTP email transport must not be enabled in Production. " +
-                        "Remove EmailSettings__SmtpTransportEnabled or set it to false.");
-                }
-
                 services.AddScoped<IEmailService, SmtpEmailService>();
             }
             else
