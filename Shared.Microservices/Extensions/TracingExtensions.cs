@@ -61,16 +61,30 @@ public static class TracingExtensions
     }
 
     /// <summary>
-    /// Adds EF Core instrumentation that only records spans within an existing trace
-    /// (i.e., when there's an active parent activity). This prevents background
-    /// operations like MassTransit outbox polling from creating orphan root spans.
+    /// Adds EF Core instrumentation that only records spans when the current trace
+    /// originated from an exported source (ASP.NET Core or HttpClient). This prevents:
+    /// - MassTransit outbox polling (no parent activity at all)
+    /// - MassTransit consumer DB queries (parent is MassTransit activity which isn't
+    ///   exported, producing orphaned spans in Tempo)
     /// </summary>
     public static TracerProviderBuilder AddFilteredEfCoreInstrumentation(
         this TracerProviderBuilder tracing)
     {
         return tracing.AddEntityFrameworkCoreInstrumentation(options =>
         {
-            options.Filter = (_, _) => Activity.Current?.ParentId != null;
+            options.Filter = (_, _) => HasExportedAncestor(Activity.Current);
         });
+    }
+
+    private static bool HasExportedAncestor(Activity? activity)
+    {
+        while (activity != null)
+        {
+            if (activity.IsAllDataRequested)
+                return true;
+            activity = activity.Parent;
+        }
+
+        return false;
     }
 }
