@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Resources;
@@ -57,5 +58,19 @@ public static class TracingExtensions
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Adds EF Core instrumentation that only records spans within an existing trace
+    /// (i.e., when there's an active parent activity). This prevents background
+    /// operations like MassTransit outbox polling from creating orphan root spans.
+    /// </summary>
+    public static TracerProviderBuilder AddFilteredEfCoreInstrumentation(
+        this TracerProviderBuilder tracing)
+    {
+        return tracing.AddEntityFrameworkCoreInstrumentation(options =>
+        {
+            options.Filter = (_, _) => Activity.Current?.ParentId != null;
+        });
     }
 }
