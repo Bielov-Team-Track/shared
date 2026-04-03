@@ -11,4 +11,6 @@ public class UserProfile : BaseEntity
     public bool IsActive { get; set; }
     public string? PhoneNumber { get; set; }
     public bool IsEmailVerified { get; set; }
+
+    public string FullName => $"{Name} {Surname}".Trim();
 }
