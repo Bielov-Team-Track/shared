@@ -1,0 +1,10 @@
+namespace Shared.Messaging.Contracts.Events.Subscriptions;
+
+public record SubscriptionDeactivatedEvent : IEvent
+{
+    public Guid EventId { get; init; } = Guid.NewGuid();
+    public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+    public required Guid UserId { get; init; }
+    public required Guid ClubId { get; init; }
+    public required Guid SubscriptionId { get; init; }
+}

@@ -16,6 +16,12 @@ service PaymentsInternalService {
 
   // Batch payment status lookup for multiple participants
   rpc GetPaymentStatusBatch (GetPaymentStatusBatchRequest) returns (GetPaymentStatusBatchResponse);
+
+  // Create a zero-amount payment covered by subscription
+  rpc CreateSubscriptionPayment (CreateSubscriptionPaymentRequest) returns (CreateSubscriptionPaymentResponse);
+
+  // Void a subscription-covered payment (idempotent)
+  rpc VoidSubscriptionPayment (VoidSubscriptionPaymentRequest) returns (VoidSubscriptionPaymentResponse);
 }
 
 // === CheckActiveSubscription ===
@@ -79,4 +85,30 @@ message PaymentStatusEntry {
   string amount = 4;           // string representation of decimal (use decimal.Parse/ToString)
   string currency = 5;
   string paid_at = 6;
+}
+
+// === CreateSubscriptionPayment ===
+
+message CreateSubscriptionPaymentRequest {
+  string user_id = 1;
+  string event_id = 2;
+  string subscription_id = 3;
+  string club_id = 4;
+}
+
+message CreateSubscriptionPaymentResponse {
+  string payment_id = 1;
+  string status = 2;
+}
+
+// === VoidSubscriptionPayment ===
+
+message VoidSubscriptionPaymentRequest {
+  string user_id = 1;
+  string event_id = 2;
+}
+
+message VoidSubscriptionPaymentResponse {
+  bool success = 1;
+  bool already_voided = 2;
 }

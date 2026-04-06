@@ -25,6 +25,9 @@ service ClubsInternalService {
 
   // For auth-service: check if user is sole owner of any club
   rpc CheckSoleOwnership (CheckSoleOwnershipRequest) returns (CheckSoleOwnershipResponse);
+
+  // For events-service: resolve team/group context to parent club
+  rpc ResolveClubId (ResolveClubIdRequest) returns (ResolveClubIdResponse);
 }
 
 // === Club Members ===
@@ -167,4 +170,16 @@ message CheckSoleOwnershipRequest {
 message CheckSoleOwnershipResponse {
   bool is_sole_owner = 1;
   repeated string club_names = 2;
+}
+
+// === ResolveClubId ===
+
+message ResolveClubIdRequest {
+  string context_type = 1;  // "Club", "Team", "Group"
+  string context_id = 2;
+}
+
+message ResolveClubIdResponse {
+  string club_id = 1;
+  bool found = 2;
 }
