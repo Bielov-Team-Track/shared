@@ -98,5 +98,20 @@ namespace Shared.Services.FileStorage
         {
             return $"{_s3Settings.PublicBaseUrl.TrimEnd('/')}/{key.TrimStart('/')}";
         }
+
+        public async Task<byte[]> GetObjectHeadBytesAsync(string key, string bucket, int byteCount)
+        {
+            var request = new Amazon.S3.Model.GetObjectRequest
+            {
+                BucketName = bucket,
+                Key = key,
+                ByteRange = new Amazon.S3.Model.ByteRange(0, byteCount - 1)
+            };
+
+            using var response = await _s3Client.GetObjectAsync(request);
+            using var ms = new MemoryStream(byteCount);
+            await response.ResponseStream.CopyToAsync(ms);
+            return ms.ToArray();
+        }
     }
 }

@@ -26,5 +26,10 @@
         /// Gets the public URL for an object. Uses configured base URL (S3 or CDN).
         /// </summary>
         string GetPublicUrl(string key);
+
+        /// <summary>
+        /// Reads the first N bytes of an object via a range GET.
+        /// </summary>
+        Task<byte[]> GetObjectHeadBytesAsync(string key, string bucket, int byteCount);
     }
 }
