@@ -1,9 +1,17 @@
 namespace Shared.Models;
 
-public abstract class BaseEntity
+public abstract class BaseEntity<TKey> : IEntity<TKey>, IAuditable, ISoftDelete
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+    public TKey Id { get; set; } = default!;
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
+}
+
+public abstract class BaseEntity : BaseEntity<Guid>
+{
+    protected BaseEntity()
+    {
+        Id = Guid.NewGuid();
+    }
 }
