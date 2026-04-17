@@ -1,15 +1,18 @@
+using NUnit.Framework;
 using Shared.Logging.Redaction;
 
 namespace Shared.Tests.Logging.Redaction;
 
-public class PiiRedactorTests
+[TestFixture]
+[Category("Unit")]
+public class PersonalDataRedactorTests
 {
-    private PiiRedactor _redactor;
+    private PersonalDataRedactor _redactor;
 
     [SetUp]
     public void Setup()
     {
-        _redactor = new PiiRedactor();
+        _redactor = new PersonalDataRedactor();
     }
 
     [TestCase("john.doe@example.com", "joh********@example.com")]
