@@ -30,6 +30,7 @@
         NotParticipant = 304,
         RegistrationClosed = 305,
         PositionAlreadyClaimed = 306,
+        RegistrationNotOpen = 307,
 
         // Clubs (400-499)
         ClubNotFound = 400,
