@@ -8,5 +8,7 @@
         public string? CheckoutSuccessUrl { get; set; }
         public string? CheckoutCancelUrl { get; set; }
         public string? WebhookSecret { get; set; }
+        public decimal PlatformFeePercent { get; set; } = 7.0m;
+        public decimal PlatformFeeMin { get; set; } = 0.50m;
     }
 }
