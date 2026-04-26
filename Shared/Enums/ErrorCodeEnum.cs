@@ -45,6 +45,7 @@
         PaymentRequired = 501,
         RefundFailed = 502,
         ServiceUnavailable = 503,
+        PaymentAccountInactive = 504,
 
         // Family/Guardian (600-699)
         HouseholdNotFound = 600,
