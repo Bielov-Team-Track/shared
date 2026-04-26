@@ -1,26 +1,18 @@
 syntax = "proto3";
 
+import "google/protobuf/struct.proto";
+
 option csharp_namespace = "Shared.Contracts.Grpc";
 
 package payments;
 
 service PaymentsInternalService {
-  // Check if user has an active subscription for a club
   rpc CheckActiveSubscription (CheckActiveSubscriptionRequest) returns (CheckActiveSubscriptionResponse);
-
-  // Get payment status for an event participant
   rpc GetPaymentStatus (GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
-
-  // Create a payment record for an event participant
-  rpc CreatePaymentForParticipant (CreatePaymentForParticipantRequest) returns (CreatePaymentForParticipantResponse);
-
-  // Batch payment status lookup for multiple participants
   rpc GetPaymentStatusBatch (GetPaymentStatusBatchRequest) returns (GetPaymentStatusBatchResponse);
-
-  // Create a zero-amount payment covered by subscription
+  rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
+  rpc CancelPayment (CancelPaymentRequest) returns (CancelPaymentResponse);
   rpc CreateSubscriptionPayment (CreateSubscriptionPaymentRequest) returns (CreateSubscriptionPaymentResponse);
-
-  // Void a subscription-covered payment (idempotent)
   rpc VoidSubscriptionPayment (VoidSubscriptionPaymentRequest) returns (VoidSubscriptionPaymentResponse);
 }
 
@@ -40,51 +32,46 @@ message CheckActiveSubscriptionResponse {
 // === GetPaymentStatus ===
 
 message GetPaymentStatusRequest {
-  string event_participant_id = 1;
+  // Provide at least one of these identifiers. PaymentId wins if both are set.
+  string payment_id = 1;
+  string payment_key = 2;
+  // Optionally look up the active payment by target instead:
+  string target_type = 3;
+  string target_id = 4;
+  string payment_method = 5;   // optional scope — matches against Payment.PaymentMethod
 }
 
 message GetPaymentStatusResponse {
   bool found = 1;
   string payment_id = 2;
-  string status = 3;                // Pending, Completed, Failed, Refunded
-  double amount = 4;
-  string currency = 5;
-  string paid_at = 6;               // ISO 8601 or empty
-}
-
-// === CreatePaymentForParticipant ===
-
-message CreatePaymentForParticipantRequest {
-  string event_participant_id = 1;
-  double amount = 2;
-  string currency = 3;
-  string payment_provider = 4;      // "stripe" or "manual"
-}
-
-message CreatePaymentForParticipantResponse {
-  string payment_id = 1;
-  string status = 2;
+  string payment_key = 3;
+  string status = 4;             // Pending | Processing | Completed | Failed | Cancelled | Refunded | Voided
+  int64 amount_minor = 5;
+  string currency = 6;
+  string paid_at = 7;            // ISO 8601, empty string when not completed
+  string target_type = 8;
+  string target_id = 9;
 }
 
 // === GetPaymentStatusBatch ===
 
-// Batch payment status lookup
-// Maximum 500 entries per request. Server returns INVALID_ARGUMENT if exceeded.
 message GetPaymentStatusBatchRequest {
-  repeated string event_participant_ids = 1;
+  string target_type = 1;
+  repeated string target_ids = 2;   // max 500 entries; server returns INVALID_ARGUMENT if exceeded
 }
 
 message GetPaymentStatusBatchResponse {
-  map<string, PaymentStatusEntry> statuses = 1;
+  map<string, PaymentStatusEntry> statuses = 1;   // keyed by target_id
 }
 
 message PaymentStatusEntry {
   bool found = 1;
   string payment_id = 2;
-  string status = 3;
-  string amount = 4;           // string representation of decimal (use decimal.Parse/ToString)
-  string currency = 5;
-  string paid_at = 6;
+  string payment_key = 3;
+  string status = 4;
+  int64 amount_minor = 5;
+  string currency = 6;
+  string paid_at = 7;
 }
 
 // === CreateSubscriptionPayment ===
@@ -111,4 +98,40 @@ message VoidSubscriptionPaymentRequest {
 message VoidSubscriptionPaymentResponse {
   bool success = 1;
   bool already_voided = 2;
+}
+
+// === CreatePayment ===
+
+message CreatePaymentRequest {
+  string payment_key = 1;
+  string target_type = 2;
+  string target_id = 3;
+  string payer_user_id = 4;
+  string recipient_owner_type = 5;
+  string recipient_owner_id = 6;
+  int64 amount_minor = 7;
+  string currency = 8;
+  string provider = 9;
+  string payment_method = 10;
+  google.protobuf.Struct metadata = 11;
+}
+
+message CreatePaymentResponse {
+  string payment_id = 1;
+  string client_secret = 2;
+  bool existing = 3;
+  string status = 4;
+}
+
+// === CancelPayment ===
+
+message CancelPaymentRequest {
+  string payment_id = 1;
+  string payment_key = 2;
+  string reason = 3;
+}
+
+message CancelPaymentResponse {
+  enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
+  Result result = 1;
 }
