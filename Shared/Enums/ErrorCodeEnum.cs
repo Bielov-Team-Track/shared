@@ -31,6 +31,7 @@
         RegistrationClosed = 305,
         PositionAlreadyClaimed = 306,
         RegistrationNotOpen = 307,
+        EventEnded = 308,
 
         // Clubs (400-499)
         ClubNotFound = 400,
