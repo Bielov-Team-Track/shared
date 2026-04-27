@@ -32,6 +32,10 @@
         PositionAlreadyClaimed = 306,
         RegistrationNotOpen = 307,
         EventEnded = 308,
+        ParticipantNotFound = 309,
+        AlreadyPaid = 310,
+        PaymentInProgress = 311,
+        NoFeeConfigured = 312,
 
         // Clubs (400-499)
         ClubNotFound = 400,
