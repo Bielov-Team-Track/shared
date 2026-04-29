@@ -14,6 +14,11 @@ service PaymentsInternalService {
   rpc CancelPayment (CancelPaymentRequest) returns (CancelPaymentResponse);
   rpc CreateSubscriptionPayment (CreateSubscriptionPaymentRequest) returns (CreateSubscriptionPaymentResponse);
   rpc VoidSubscriptionPayment (VoidSubscriptionPaymentRequest) returns (VoidSubscriptionPaymentResponse);
+
+  // Canonical status RPCs (Phase 0 of payment-status refactor; legacy RPCs above remain during migration).
+  rpc EnsurePaymentForTarget (EnsurePaymentForTargetRequest) returns (EnsurePaymentForTargetResponse);
+  rpc ApplyPaymentStatusChange (ApplyPaymentStatusChangeRequest) returns (ApplyPaymentStatusChangeResponse);
+  rpc StartPaymentForTarget (StartPaymentForTargetRequest) returns (StartPaymentForTargetResponse);
 }
 
 // === CheckActiveSubscription ===
@@ -134,4 +139,74 @@ message CancelPaymentRequest {
 message CancelPaymentResponse {
   enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
   Result result = 1;
+}
+
+// === EnsurePaymentForTarget ===
+// Idempotently ensure a canonical Payment row exists for (target_type, target_id) with Status=Unpaid.
+// Called when a participant becomes payable for a paid event. Safe to call repeatedly.
+message EnsurePaymentForTargetRequest {
+  string target_type = 1;
+  string target_id = 2;
+  string payer_user_id = 3;
+  string recipient_owner_type = 4;
+  string recipient_owner_id = 5;
+  int64 amount_minor = 6;
+  string currency = 7;
+  google.protobuf.Struct metadata = 8;
+  string idempotency_key = 9;
+}
+
+message EnsurePaymentForTargetResponse {
+  string payment_id = 1;
+  string status = 2;            // canonical PaymentStatus name (Unpaid|Pending|Paid|...)
+  int64 status_version = 3;
+  bool created = 4;             // true if a new Payment row was created
+}
+
+// === ApplyPaymentStatusChange ===
+// Single canonical write surface. Validates the transition, updates Payment.Status,
+// increments StatusVersion, writes audit, and publishes PaymentStatusChangedEvent via outbox.
+message ApplyPaymentStatusChangeRequest {
+  string target_type = 1;
+  string target_id = 2;
+  string new_status = 3;        // canonical PaymentStatus name
+  string payment_method = 4;    // canonical PaymentMethodType name
+  string provider = 5;          // canonical PaymentProviderType name
+  string actor_user_id = 6;     // empty for system-driven transitions (e.g. Stripe webhook)
+  string reason = 7;
+  google.protobuf.Struct metadata = 8;
+  string idempotency_key = 9;
+  int64 expected_version = 10;  // 0 = skip optimistic check
+}
+
+message ApplyPaymentStatusChangeResponse {
+  string payment_id = 1;
+  string old_status = 2;
+  string new_status = 3;
+  int64 status_version = 4;
+  bool no_op = 5;               // true if status was already at new_status (idempotent replay)
+}
+
+// === StartPaymentForTarget ===
+// Begin a payment attempt (Stripe checkout, etc.). Ensures Payment exists, transitions to
+// Pending if needed, creates a PaymentAttempt row, returns provider-specific client_secret.
+message StartPaymentForTargetRequest {
+  string target_type = 1;
+  string target_id = 2;
+  string payer_user_id = 3;
+  string recipient_owner_type = 4;
+  string recipient_owner_id = 5;
+  int64 amount_minor = 6;
+  string currency = 7;
+  string provider = 8;          // canonical PaymentProviderType name
+  string payment_method = 9;    // canonical PaymentMethodType name
+  google.protobuf.Struct metadata = 10;
+  string idempotency_key = 11;
+}
+
+message StartPaymentForTargetResponse {
+  string payment_id = 1;
+  string attempt_id = 2;
+  string client_secret = 3;     // empty for non-Stripe providers
+  string status = 4;            // canonical PaymentStatus name (typically Pending)
 }
