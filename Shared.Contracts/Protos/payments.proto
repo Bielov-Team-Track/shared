@@ -10,15 +10,14 @@ service PaymentsInternalService {
   rpc CheckActiveSubscription (CheckActiveSubscriptionRequest) returns (CheckActiveSubscriptionResponse);
   rpc GetPaymentStatus (GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
   rpc GetPaymentStatusBatch (GetPaymentStatusBatchRequest) returns (GetPaymentStatusBatchResponse);
-  rpc CreatePayment (CreatePaymentRequest) returns (CreatePaymentResponse);
-  rpc CancelPayment (CancelPaymentRequest) returns (CancelPaymentResponse);
   rpc CreateSubscriptionPayment (CreateSubscriptionPaymentRequest) returns (CreateSubscriptionPaymentResponse);
   rpc VoidSubscriptionPayment (VoidSubscriptionPaymentRequest) returns (VoidSubscriptionPaymentResponse);
 
-  // Canonical status RPCs (Phase 0 of payment-status refactor; legacy RPCs above remain during migration).
+  // Canonical payment surface (target-based identifiers; backed by the canonical Payment row).
   rpc EnsurePaymentForTarget (EnsurePaymentForTargetRequest) returns (EnsurePaymentForTargetResponse);
   rpc ApplyPaymentStatusChange (ApplyPaymentStatusChangeRequest) returns (ApplyPaymentStatusChangeResponse);
   rpc StartPaymentForTarget (StartPaymentForTargetRequest) returns (StartPaymentForTargetResponse);
+  rpc CancelPaymentForTarget (CancelPaymentForTargetRequest) returns (CancelPaymentForTargetResponse);
 }
 
 // === CheckActiveSubscription ===
@@ -105,42 +104,6 @@ message VoidSubscriptionPaymentResponse {
   bool already_voided = 2;
 }
 
-// === CreatePayment ===
-
-message CreatePaymentRequest {
-  string payment_key = 1;
-  string target_type = 2;
-  string target_id = 3;
-  string payer_user_id = 4;
-  string recipient_owner_type = 5;
-  string recipient_owner_id = 6;
-  int64 amount_minor = 7;
-  string currency = 8;
-  string provider = 9;
-  string payment_method = 10;
-  google.protobuf.Struct metadata = 11;
-}
-
-message CreatePaymentResponse {
-  string payment_id = 1;
-  string client_secret = 2;
-  bool existing = 3;
-  string status = 4;
-}
-
-// === CancelPayment ===
-
-message CancelPaymentRequest {
-  string payment_id = 1;
-  string payment_key = 2;
-  string reason = 3;
-}
-
-message CancelPaymentResponse {
-  enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
-  Result result = 1;
-}
-
 // === EnsurePaymentForTarget ===
 // Idempotently ensure a canonical Payment row exists for (target_type, target_id) with Status=Unpaid.
 // Called when a participant becomes payable for a paid event. Safe to call repeatedly.
@@ -209,4 +172,20 @@ message StartPaymentForTargetResponse {
   string attempt_id = 2;
   string client_secret = 3;     // empty for non-Stripe providers
   string status = 4;            // canonical PaymentStatus name (typically Pending)
+}
+
+// === CancelPaymentForTarget ===
+// Cancel an in-flight payment for a target. If a Stripe PaymentIntent is active,
+// the server cancels it via the provider; on success the canonical status drops
+// back to Unpaid via ApplyPaymentStatusChange (which emits PaymentStatusChangedEvent).
+// Returns CANNOT_CANCEL_IN_FLIGHT when the provider reports the intent is mid-charge.
+message CancelPaymentForTargetRequest {
+  string target_type = 1;
+  string target_id = 2;
+  string reason = 3;
+}
+
+message CancelPaymentForTargetResponse {
+  enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
+  Result result = 1;
 }
