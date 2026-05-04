@@ -18,6 +18,7 @@ service PaymentsInternalService {
   rpc ApplyPaymentStatusChange (ApplyPaymentStatusChangeRequest) returns (ApplyPaymentStatusChangeResponse);
   rpc StartPaymentForTarget (StartPaymentForTargetRequest) returns (StartPaymentForTargetResponse);
   rpc CancelPaymentForTarget (CancelPaymentForTargetRequest) returns (CancelPaymentForTargetResponse);
+  rpc GetActiveAccount (GetActiveAccountRequest) returns (GetActiveAccountResponse);
 }
 
 // === CheckActiveSubscription ===
@@ -188,4 +189,21 @@ message CancelPaymentForTargetRequest {
 message CancelPaymentForTargetResponse {
   enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
   Result result = 1;
+}
+
+// === GetActiveAccount ===
+// Returns the recipient account state for an owner, used by events-service to validate
+// recipients at event create/update time. Always live with respect to provider state.
+message GetActiveAccountRequest {
+  string owner_type = 1;   // "User" | "Club"
+  string owner_id   = 2;
+}
+
+message GetActiveAccountResponse {
+  bool   found               = 1;   // false = no non-deleted UserPaymentAccount row exists
+  bool   active              = 2;   // provider says recipient can receive payments now
+  string provider            = 3;
+  string display_label       = 4;
+  bool   onboarding_complete = 5;
+  bool   needs_onboarding    = 6;
 }
