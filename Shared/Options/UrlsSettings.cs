@@ -4,5 +4,6 @@
     {
         public string? Web { get; set; }
         public string? UserProfilesUrl { get; set; }
+        public string? ClubsUrl { get; set; }
     }
 }
