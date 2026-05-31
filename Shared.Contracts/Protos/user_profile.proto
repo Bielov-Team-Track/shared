@@ -7,6 +7,7 @@ package userprofile;
 service UserProfileService {
   rpc CreateProfile (CreateProfileRequest) returns (CreateProfileResponse);
   rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse);
+  rpc CheckGuardianAccess (CheckGuardianAccessRequest) returns (CheckGuardianAccessResponse);
 }
 
 message CreateProfileRequest {
@@ -37,4 +38,18 @@ message UserInfo {
 
 message GetUserInfoResponse {
   repeated UserInfo users = 1;
+}
+
+message CheckGuardianAccessRequest {
+  string guardian_id = 1;
+  string minor_id = 2;
+  bool check_removal_notice = 3;
+  repeated string consent_types = 4;
+}
+
+message CheckGuardianAccessResponse {
+  bool has_access = 1;
+  bool is_under_removal_notice = 2;
+  int32 permissions = 3;
+  repeated string granted_consent_types = 4;
 }
