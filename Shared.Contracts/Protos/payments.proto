@@ -18,6 +18,7 @@ service PaymentsInternalService {
   rpc ApplyPaymentStatusChange (ApplyPaymentStatusChangeRequest) returns (ApplyPaymentStatusChangeResponse);
   rpc StartPaymentForTarget (StartPaymentForTargetRequest) returns (StartPaymentForTargetResponse);
   rpc CancelPaymentForTarget (CancelPaymentForTargetRequest) returns (CancelPaymentForTargetResponse);
+  rpc SyncPaymentFromProvider (SyncPaymentFromProviderRequest) returns (SyncPaymentFromProviderResponse);
   rpc GetActiveAccount (GetActiveAccountRequest) returns (GetActiveAccountResponse);
 }
 
@@ -189,6 +190,20 @@ message CancelPaymentForTargetRequest {
 message CancelPaymentForTargetResponse {
   enum Result { CANCELLED = 0; CANNOT_CANCEL_IN_FLIGHT = 1; ALREADY_COMPLETED = 2; NOT_FOUND = 3; }
   Result result = 1;
+}
+
+// === SyncPaymentFromProvider ===
+// Reconcile a single Payment row against the upstream provider (Stripe). When the
+// provider reports a different terminal state than our DB (e.g. webhook missed),
+// applies the canonical status change and returns the resulting status. No-op for
+// providers without a remote payment intent.
+message SyncPaymentFromProviderRequest {
+  string payment_id = 1;
+}
+
+message SyncPaymentFromProviderResponse {
+  string payment_id = 1;
+  string status = 2;        // canonical PaymentStatus name after reconcile (Unpaid|Pending|Paid|Failed|Refunded|...)
 }
 
 // === GetActiveAccount ===
