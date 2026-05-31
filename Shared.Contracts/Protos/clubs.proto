@@ -28,6 +28,13 @@ service ClubsInternalService {
 
   // For events-service: resolve team/group context to parent club
   rpc ResolveClubId (ResolveClubIdRequest) returns (ResolveClubIdResponse);
+
+  // For profiles-service: check whether the viewer can moderate / coach the target
+  // (used to gate guardian visibility on /households/users/{id}/guardians).
+  // Returns true iff one of: viewer is club Owner/Admin/HeadCoach in any of target's clubs;
+  //                          viewer + target share a group AND viewer is GroupRole Admin/Coach/AssistantCoach;
+  //                          viewer + target share a team  AND viewer is TeamRole  Admin/Manager/Coach/AssistantCoach.
+  rpc CanModerateUser (CanModerateUserRequest) returns (CanModerateUserResponse);
 }
 
 // === Club Members ===
@@ -182,4 +189,15 @@ message ResolveClubIdRequest {
 message ResolveClubIdResponse {
   string club_id = 1;
   bool found = 2;
+}
+
+// === CanModerateUser ===
+
+message CanModerateUserRequest {
+  string viewer_user_id = 1;
+  string target_user_id = 2;
+}
+
+message CanModerateUserResponse {
+  bool can_moderate = 1;
 }
