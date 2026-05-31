@@ -11,4 +11,5 @@ public class UserMentionedEvent : INotificationEvent
     public required string MentionedByUserName { get; set; }
     public Guid SourceId { get; init; }
     public MentionSourceType SourceType { get; init; }
+    public Guid? PostId { get; init; }
 }
