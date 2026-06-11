@@ -7,10 +7,12 @@
 
         /// <summary>
         /// Moves an object from one key to another within the same bucket.
-        /// Optionally sets Cache-Control metadata on the destination object.
+        /// Optionally sets Cache-Control, Content-Type and Content-Disposition metadata
+        /// on the destination object. When any metadata is set, Content-Type is preserved
+        /// from the source object unless an explicit <paramref name="contentType"/> is given.
         /// </summary>
         Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket,
-            string? cacheControl = null);
+            string? cacheControl = null, string? contentType = null, string? contentDisposition = null);
 
         /// <summary>
         /// Deletes an object from the bucket.
