@@ -15,11 +15,11 @@ public static class VideoUrlParser
     // The host check lives inside each pattern, so lookalike domains
     // (example.com/watch?v=…) never match.
     private static readonly Regex YouTube = new(
-        @"(?:https?://)?(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:[^#\s]*&)?v=|embed/|shorts/)|youtu\.be/)(?<id>[A-Za-z0-9_-]{11})",
+        @"(?:^|https?://)(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:[^#\s]*&)?v=|embed/|shorts/)|youtu\.be/)(?<id>[A-Za-z0-9_-]{11})",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex Vimeo = new(
-        @"(?:https?://)?(?:www\.)?vimeo\.com/(?:video/)?(?<id>\d+)",
+        @"(?:^|https?://)(?:www\.)?vimeo\.com/(?:video/)?(?<id>\d+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static bool TryParse(string? url, [NotNullWhen(true)] out VideoEmbedInfo? info)

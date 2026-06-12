@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Shared.Services.Embeds;
 
-public class VideoOEmbedClient : IVideoOEmbedClient
+public sealed class VideoOEmbedClient : IVideoOEmbedClient
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromDays(7);
 

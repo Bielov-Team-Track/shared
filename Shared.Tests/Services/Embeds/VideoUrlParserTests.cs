@@ -39,6 +39,8 @@ public class VideoUrlParserTests
 
     [TestCase("https://example.com/watch?v=dQw4w9WgXcQ")]
     [TestCase("https://www.dailymotion.com/video/x7tgad0")]
+    [TestCase("https://notvimeo.com/123456")]
+    [TestCase("https://notyoutube.com/watch?v=dQw4w9WgXcQ")]
     [TestCase("not a url")]
     [TestCase("")]
     public void TryParse_WithUnsupportedUrl_ReturnsFalse(string url)
