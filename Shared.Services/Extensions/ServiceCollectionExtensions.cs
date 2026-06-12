@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Options;
+using Shared.Services.Embeds;
 using Shared.Services.FileStorage;
 using Shared.Services.FileStorage.Intefaces;
 using Shared.Services.Interfaces;
@@ -54,6 +55,19 @@ public static class ServiceCollectionExtensions
         }
 
         return AddSharedServicesCore(services);
+    }
+
+    /// <summary>
+    /// Video-embed support (URL parsing is static; this wires the oEmbed client).
+    /// Opt-in per service — social and messages call it, others don't need it.
+    /// </summary>
+    public static IServiceCollection AddVideoEmbedServices(this IServiceCollection services)
+    {
+        services.AddHttpClient<IVideoOEmbedClient, VideoOEmbedClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(2.5);
+        });
+        return services;
     }
 
     private static IServiceCollection AddSharedServicesCore(IServiceCollection services)
