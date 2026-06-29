@@ -8,6 +8,7 @@ service UserProfileService {
   rpc CreateProfile (CreateProfileRequest) returns (CreateProfileResponse);
   rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse);
   rpc CheckGuardianAccess (CheckGuardianAccessRequest) returns (CheckGuardianAccessResponse);
+  rpc GetGuardiansForMinor (GetGuardiansForMinorRequest) returns (GetGuardiansForMinorResponse);
 }
 
 message CreateProfileRequest {
@@ -52,4 +53,13 @@ message CheckGuardianAccessResponse {
   bool is_under_removal_notice = 2;
   int32 permissions = 3;
   repeated string granted_consent_types = 4;
+}
+
+message GetGuardiansForMinorRequest {
+  string minor_id = 1;
+}
+
+message GetGuardiansForMinorResponse {
+  repeated string guardian_ids = 1;
+  string minor_display_name = 2;
 }
