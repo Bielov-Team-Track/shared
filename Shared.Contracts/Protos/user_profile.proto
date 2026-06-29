@@ -9,6 +9,7 @@ service UserProfileService {
   rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse);
   rpc CheckGuardianAccess (CheckGuardianAccessRequest) returns (CheckGuardianAccessResponse);
   rpc GetGuardiansForMinor (GetGuardiansForMinorRequest) returns (GetGuardiansForMinorResponse);
+  rpc GetMinorsForGuardian (GetMinorsForGuardianRequest) returns (GetMinorsForGuardianResponse);
 }
 
 message CreateProfileRequest {
@@ -62,4 +63,17 @@ message GetGuardiansForMinorRequest {
 message GetGuardiansForMinorResponse {
   repeated string guardian_ids = 1;
   string minor_display_name = 2;
+}
+
+message GetMinorsForGuardianRequest {
+  string guardian_id = 1;
+}
+
+message GetMinorsForGuardianResponse {
+  repeated MinorInfo minors = 1;
+}
+
+message MinorInfo {
+  string user_id = 1;
+  string display_name = 2;
 }
