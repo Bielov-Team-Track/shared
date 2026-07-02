@@ -38,7 +38,7 @@ namespace Shared.Services.FileStorage
         }
 
         public async Task MoveObjectAsync(string sourceKey, string destinationKey, string bucket,
-            string? cacheControl = null)
+            string? cacheControl = null, string? contentType = null, string? contentDisposition = null)
         {
             // Copy to new location
             var copyRequest = new CopyObjectRequest
@@ -49,10 +49,26 @@ namespace Shared.Services.FileStorage
                 DestinationKey = destinationKey
             };
 
-            if (!string.IsNullOrEmpty(cacheControl))
+            if (!string.IsNullOrEmpty(cacheControl) || !string.IsNullOrEmpty(contentType) ||
+                !string.IsNullOrEmpty(contentDisposition))
             {
+                // REPLACE swaps the destination's entire metadata set, so Content-Type
+                // must be carried over explicitly or S3 stores the copy as
+                // binary/octet-stream (which makes browsers download instead of render).
                 copyRequest.MetadataDirective = S3MetadataDirective.REPLACE;
-                copyRequest.Headers["Cache-Control"] = cacheControl;
+                copyRequest.Headers.ContentType = !string.IsNullOrEmpty(contentType)
+                    ? contentType
+                    : (await _s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
+                    {
+                        BucketName = bucket,
+                        Key = sourceKey
+                    })).Headers.ContentType;
+
+                if (!string.IsNullOrEmpty(cacheControl))
+                    copyRequest.Headers.CacheControl = cacheControl;
+
+                if (!string.IsNullOrEmpty(contentDisposition))
+                    copyRequest.Headers.ContentDisposition = contentDisposition;
             }
 
             await _s3Client.CopyObjectAsync(copyRequest);
