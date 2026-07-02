@@ -8,6 +8,10 @@ namespace Shared.Exceptions
             : base(message, System.Net.HttpStatusCode.Forbidden, ErrorCodeEnum.Forbidden)
         {
         }
+        public ForbiddenException(string message, ErrorCodeEnum errorCode)
+            : base(message, System.Net.HttpStatusCode.Forbidden, errorCode)
+        {
+        }
         public ForbiddenException(string message, string additionalInformation)
             : base(message, System.Net.HttpStatusCode.Forbidden, ErrorCodeEnum.Forbidden, additionalInformation)
         {
