@@ -35,6 +35,10 @@ service ClubsInternalService {
   //                          viewer + target share a group AND viewer is GroupRole Admin/Coach/AssistantCoach;
   //                          viewer + target share a team  AND viewer is TeamRole  Admin/Manager/Coach/AssistantCoach.
   rpc CanModerateUser (CanModerateUserRequest) returns (CanModerateUserResponse);
+
+  // For profiles-service: do two users share at least one active club?
+  // Gates contact info (email/phone) visibility on public profile reads.
+  rpc UsersShareClub (UsersShareClubRequest) returns (UsersShareClubResponse);
 }
 
 // === Club Members ===
@@ -200,4 +204,15 @@ message CanModerateUserRequest {
 
 message CanModerateUserResponse {
   bool can_moderate = 1;
+}
+
+// === UsersShareClub ===
+
+message UsersShareClubRequest {
+  string viewer_user_id = 1;
+  string target_user_id = 2;
+}
+
+message UsersShareClubResponse {
+  bool shares_club = 1;
 }
