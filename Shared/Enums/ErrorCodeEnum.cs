@@ -36,6 +36,7 @@
         AlreadyPaid = 310,
         PaymentInProgress = 311,
         NoFeeConfigured = 312,
+        ReminderCooldownActive = 313,
 
         // Clubs (400-499)
         ClubNotFound = 400,
