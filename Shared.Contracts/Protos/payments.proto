@@ -221,4 +221,7 @@ message GetActiveAccountResponse {
   string display_label       = 4;
   bool   onboarding_complete = 5;
   bool   needs_onboarding    = 6;
+  // Account default currency, uppercase ISO-4217 (e.g. "GBP").
+  // Empty when unknown (no account, or provider has no default_currency yet).
+  string currency            = 7;
 }
