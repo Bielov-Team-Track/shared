@@ -12,4 +12,7 @@ public record ClubRegistrationSubmittedEvent : INotificationEvent
     public required Guid RequestedUserId { get; init; }
     public required string RequestedUserName { get; init; }
     public string? RequestedUserImageUrl { get; init; }
+    /// <summary>Guardian who submitted this registration for a managed minor; null for self-registrations.</summary>
+    public Guid? SubmittedByUserId { get; init; }
+    public string? SubmittedByUserName { get; init; }
 }

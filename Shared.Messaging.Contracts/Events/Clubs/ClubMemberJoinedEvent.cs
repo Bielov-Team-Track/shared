@@ -10,4 +10,6 @@ public record ClubMemberJoinedEvent : INotificationEvent
     public required string ClubName { get; init; }
     public required Guid MemberId { get; init; }
     public required string MemberName { get; init; }
+    /// <summary>True when membership was created as a side effect (guardian auto-join on a child's acceptance), not a direct application.</summary>
+    public bool IsAutoJoin { get; init; }
 }
