@@ -7,4 +7,6 @@ public record MessageCreatedEvent : IEvent
     public Guid MessageId { get; init; }
     public Guid ChatId { get; init; }
     public Guid SenderId { get; init; }
+    /// <summary>Platform-channel posts only: author chose to push this post. Default false — in-flight events during deploy stay silent.</summary>
+    public bool NotifyPush { get; init; }
 }

@@ -7,6 +7,7 @@ package notifications;
 service NotificationsInternalService {
   rpc SendPush (SendPushRequest) returns (SendPushResponse);
   rpc SendPushBatch (SendPushBatchRequest) returns (SendPushBatchResponse);
+  rpc BroadcastPush (BroadcastPushRequest) returns (BroadcastPushResponse);
 }
 
 message SendPushRequest {
@@ -29,4 +30,20 @@ message SendPushBatchRequest {
 message SendPushBatchResponse {
   int32 total_succeeded = 1;
   int32 total_failed = 2;
+}
+
+message BroadcastPushRequest {
+  string category = 1;               // NotificationCategory name, e.g. "Announcements"
+  string title = 2;                  // <= 200 chars
+  string body = 3;                   // <= 500 chars
+  map<string, string> data = 4;
+  string image_url = 5;
+  string group_key = 6;
+  repeated string excluded_user_ids = 7;  // chat-muted + author + active-in-chat
+}
+
+message BroadcastPushResponse {
+  int32 total_recipients = 1;
+  int32 total_succeeded = 2;
+  int32 total_failed = 3;
 }
