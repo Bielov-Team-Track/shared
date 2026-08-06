@@ -79,5 +79,9 @@
         CannotRemovePrimaryGuardian = 622,
         HouseholdHasMinors = 623,
         InvalidGuardianRole = 624,
+        LinkAckExpired = 625,
+        LinkTargetAdult = 626,
+        LinkAlreadyInHousehold = 627,
+        LinkRequestClosed = 628,
     }
 }
