@@ -12,6 +12,7 @@ service UserProfileService {
   rpc GetMinorsForGuardian (GetMinorsForGuardianRequest) returns (GetMinorsForGuardianResponse);
   rpc GetAllActiveUserIds (GetAllActiveUserIdsRequest) returns (GetAllActiveUserIdsResponse);
   rpc GetAbsenceWindows (GetAbsenceWindowsRequest) returns (GetAbsenceWindowsResponse);
+  rpc GetPlayerPositions (GetPlayerPositionsRequest) returns (GetPlayerPositionsResponse);
 }
 
 message CreateProfileRequest {
@@ -105,4 +106,17 @@ message AbsenceWindowProto {
 
 message GetAbsenceWindowsResponse {
   repeated AbsenceWindowProto windows = 1;
+}
+
+message GetPlayerPositionsRequest {
+  repeated string user_ids = 1;
+}
+
+message GetPlayerPositionsResponse {
+  repeated PlayerPositions players = 1;
+}
+
+message PlayerPositions {
+  string user_id = 1;
+  repeated string positions = 2;  // VolleyballPosition names; preferred + secondary, flattened
 }
