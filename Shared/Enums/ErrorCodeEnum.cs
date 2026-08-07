@@ -21,6 +21,7 @@
         EmailAlreadyExists = 201,
         InvalidEmail = 202,
         WeakPassword = 203,
+        AbsenceOverlap = 204,
 
         // Events (300-399)
         EventNotFound = 300,
