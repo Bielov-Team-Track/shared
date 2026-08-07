@@ -11,6 +11,7 @@ service UserProfileService {
   rpc GetGuardiansForMinor (GetGuardiansForMinorRequest) returns (GetGuardiansForMinorResponse);
   rpc GetMinorsForGuardian (GetMinorsForGuardianRequest) returns (GetMinorsForGuardianResponse);
   rpc GetAllActiveUserIds (GetAllActiveUserIdsRequest) returns (GetAllActiveUserIdsResponse);
+  rpc GetAbsenceWindows (GetAbsenceWindowsRequest) returns (GetAbsenceWindowsResponse);
 }
 
 message CreateProfileRequest {
@@ -84,4 +85,20 @@ message GetAllActiveUserIdsRequest {
 
 message GetAllActiveUserIdsResponse {
   repeated string user_ids = 1;
+}
+
+message GetAbsenceWindowsRequest {
+  repeated string user_ids = 1;
+  string from_date = 2;   // yyyy-MM-dd
+  string to_date = 3;     // yyyy-MM-dd
+}
+
+message AbsenceWindowProto {
+  string user_id = 1;
+  string from_date = 2;   // yyyy-MM-dd, inclusive
+  string to_date = 3;     // yyyy-MM-dd, INCLUSIVE
+}
+
+message GetAbsenceWindowsResponse {
+  repeated AbsenceWindowProto windows = 1;
 }
