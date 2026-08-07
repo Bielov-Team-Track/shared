@@ -97,6 +97,10 @@ message AbsenceWindowProto {
   string user_id = 1;
   string from_date = 2;   // yyyy-MM-dd, inclusive
   string to_date = 3;     // yyyy-MM-dd, INCLUSIVE
+  // The absence this window came from. Consumers MUST persist it against anything they decline:
+  // the Deleted/Updated events carry only the absence id, so a restore pass has no other way to
+  // find the participations a given absence caused.
+  string absence_id = 4;
 }
 
 message GetAbsenceWindowsResponse {
