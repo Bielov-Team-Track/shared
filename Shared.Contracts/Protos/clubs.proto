@@ -14,6 +14,9 @@ service ClubsInternalService {
   rpc GetMembership (GetMembershipRequest) returns (GetMembershipResponse);
   rpc GetMemberSuggestions (GetMemberSuggestionsRequest) returns (GetMemberSuggestionsResponse);
 
+  // For social-service: resolve a position mention (e.g. @setters) to member user ids
+  rpc ResolvePositionMembers (ResolvePositionMembersRequest) returns (ResolvePositionMembersResponse);
+
   // Get club names by IDs
   rpc GetClubNames (GetClubNamesRequest) returns (GetClubNamesResponse);
 
@@ -101,6 +104,21 @@ message GetMemberSuggestionsRequest {
 
 message GetMemberSuggestionsResponse {
   repeated MemberSuggestion suggestions = 1;
+  map<string, int32> position_counts = 2;  // VolleyballPosition name -> resolved member count
+  int32 everyone_count = 3;
+}
+
+// === Position Resolution ===
+
+message ResolvePositionMembersRequest {
+  string context_type = 1;                 // Club | Group | Team, or EMPTY for profile-only
+  string context_id   = 2;
+  string position     = 3;
+  repeated string candidate_user_ids = 4;  // hard ceiling; REQUIRED when context_type is empty
+}
+
+message ResolvePositionMembersResponse {
+  repeated string user_ids = 1;
 }
 
 // === Club Names ===
