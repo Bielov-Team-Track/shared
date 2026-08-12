@@ -84,5 +84,6 @@
         LinkTargetAdult = 626,
         LinkAlreadyInHousehold = 627,
         LinkRequestClosed = 628,
+        GuardianMembershipRequired = 629,
     }
 }
