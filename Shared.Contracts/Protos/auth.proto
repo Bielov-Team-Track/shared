@@ -7,6 +7,7 @@ package auth;
 service AuthService {
   rpc CreateStubUser (CreateStubUserRequest) returns (CreateStubUserResponse);
   rpc CreateManagedUser (CreateManagedUserRequest) returns (CreateManagedUserResponse);
+  rpc UpdateUserIdentity (UpdateUserIdentityRequest) returns (UpdateUserIdentityResponse);
   rpc FindMatchingUsers (FindMatchingUsersRequest) returns (FindMatchingUsersResponse);
 }
 
@@ -40,6 +41,21 @@ message CreateManagedUserRequest {
 
 message CreateManagedUserResponse {
   string user_id = 1;
+  string error_code = 2;
+}
+
+// auth owns date of birth and country code. Every other store holds a replica, so a write applied
+// anywhere else drifts silently. Callers reach this with the authority check already done — the
+// same trust boundary CreateManagedUser draws around created_by_user_id.
+message UpdateUserIdentityRequest {
+  string user_id = 1;
+  string date_of_birth = 2;     // ISO 8601, required
+  string country_code = 3;      // optional, ISO-3166-1 alpha-2
+  string actor_user_id = 4;     // whoever authorised the change, for auth's audit trail
+}
+
+message UpdateUserIdentityResponse {
+  string age_tier = 1;
   string error_code = 2;
 }
 
