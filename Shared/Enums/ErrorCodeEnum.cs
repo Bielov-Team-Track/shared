@@ -21,6 +21,7 @@
         EmailAlreadyExists = 201,
         InvalidEmail = 202,
         WeakPassword = 203,
+        AbsenceOverlap = 204,
 
         // Events (300-399)
         EventNotFound = 300,
@@ -79,5 +80,10 @@
         CannotRemovePrimaryGuardian = 622,
         HouseholdHasMinors = 623,
         InvalidGuardianRole = 624,
+        LinkAckExpired = 625,
+        LinkTargetAdult = 626,
+        LinkAlreadyInHousehold = 627,
+        LinkRequestClosed = 628,
+        GuardianMembershipRequired = 629,
     }
 }

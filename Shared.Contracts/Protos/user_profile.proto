@@ -11,6 +11,8 @@ service UserProfileService {
   rpc GetGuardiansForMinor (GetGuardiansForMinorRequest) returns (GetGuardiansForMinorResponse);
   rpc GetMinorsForGuardian (GetMinorsForGuardianRequest) returns (GetMinorsForGuardianResponse);
   rpc GetAllActiveUserIds (GetAllActiveUserIdsRequest) returns (GetAllActiveUserIdsResponse);
+  rpc GetAbsenceWindows (GetAbsenceWindowsRequest) returns (GetAbsenceWindowsResponse);
+  rpc GetPlayerPositions (GetPlayerPositionsRequest) returns (GetPlayerPositionsResponse);
 }
 
 message CreateProfileRequest {
@@ -84,4 +86,37 @@ message GetAllActiveUserIdsRequest {
 
 message GetAllActiveUserIdsResponse {
   repeated string user_ids = 1;
+}
+
+message GetAbsenceWindowsRequest {
+  repeated string user_ids = 1;
+  string from_date = 2;   // yyyy-MM-dd
+  string to_date = 3;     // yyyy-MM-dd
+}
+
+message AbsenceWindowProto {
+  string user_id = 1;
+  string from_date = 2;   // yyyy-MM-dd, inclusive
+  string to_date = 3;     // yyyy-MM-dd, INCLUSIVE
+  // The absence this window came from. Consumers MUST persist it against anything they decline:
+  // the Deleted/Updated events carry only the absence id, so a restore pass has no other way to
+  // find the participations a given absence caused.
+  string absence_id = 4;
+}
+
+message GetAbsenceWindowsResponse {
+  repeated AbsenceWindowProto windows = 1;
+}
+
+message GetPlayerPositionsRequest {
+  repeated string user_ids = 1;
+}
+
+message GetPlayerPositionsResponse {
+  repeated PlayerPositions players = 1;
+}
+
+message PlayerPositions {
+  string user_id = 1;
+  repeated string positions = 2;  // VolleyballPosition names; preferred + secondary, flattened
 }
