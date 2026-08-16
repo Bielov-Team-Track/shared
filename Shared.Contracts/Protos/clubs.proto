@@ -91,6 +91,11 @@ message GetMembershipResponse {
   bool can_post = 3;
   bool can_comment = 4;
   bool can_view = 5;
+  // Whether the user administers this context and may act on other members'
+  // content in it. Answered here because `role` is only the single highest
+  // role and its meaning differs per context type (a club Owner is reported
+  // as `Coach` in a team), so callers cannot derive this from it.
+  bool can_moderate = 6;
 }
 
 // === Member Suggestions ===
