@@ -39,8 +39,14 @@ service ClubsInternalService {
   //                          viewer + target share a team  AND viewer is TeamRole  Admin/Manager/Coach/AssistantCoach.
   rpc CanModerateUser (CanModerateUserRequest) returns (CanModerateUserResponse);
 
-  // For profiles-service: do two users share at least one active club?
-  // Gates contact info (email/phone) visibility on public profile reads.
+  // Do two users share at least one active, VERIFIED club?
+  //
+  // Unverified clubs do NOT count. Anyone can create a club in seconds, so counting one
+  // as a shared context turned club creation into a contact list of the whole platform.
+  // Verification is set by hand in the database - no API grants it.
+  //
+  // Gates contact info (email/phone) visibility on public profile reads (profiles-service)
+  // and opening a direct chat (messages-service).
   rpc UsersShareClub (UsersShareClubRequest) returns (UsersShareClubResponse);
 }
 
