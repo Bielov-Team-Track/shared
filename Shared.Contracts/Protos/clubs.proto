@@ -48,6 +48,17 @@ service ClubsInternalService {
   // Gates contact info (email/phone) visibility on public profile reads (profiles-service)
   // and opening a direct chat (messages-service).
   rpc UsersShareClub (UsersShareClubRequest) returns (UsersShareClubResponse);
+
+  // What is A to B, and how far is each of them trusted?
+  //
+  // Answers in ONE round trip what messages-service needs to decide whether a direct
+  // chat opens normally, opens as a request, or is refused. UsersShareClub is left
+  // exactly as it is - profiles-service is a second consumer of it and gates contact
+  // info on its current semantics.
+  //
+  // Every enum here has a DENY zero value, so a default-constructed response - the
+  // shape a failed or unimplemented call produces - refuses rather than permits.
+  rpc ResolveUserRelationship (ResolveUserRelationshipRequest) returns (ResolveUserRelationshipResponse);
 }
 
 // === Club Members ===
@@ -244,4 +255,43 @@ message UsersShareClubRequest {
 
 message UsersShareClubResponse {
   bool shares_club = 1;
+}
+
+// === ResolveUserRelationship ===
+
+enum RelationshipKind {
+  RELATIONSHIP_NONE = 0;        // fail-closed default: no shared context worth anything
+  RELATIONSHIP_SAME_TEAM = 1;   // shared active team inside a verified club
+  RELATIONSHIP_SAME_GROUP = 2;  // shared active training group inside a verified club
+  RELATIONSHIP_SAME_CLUB = 3;   // shared active membership in a verified club
+  RELATIONSHIP_CROSS_CLUB = 4;  // both trusted, no shared verified club
+}
+
+enum TrustLevel {
+  TRUST_UNTRUSTED = 0;  // fail-closed default: no active membership in any verified club
+  TRUST_TRUSTED = 1;    // holds one
+  TRUST_ELEVATED = 2;   // holds one AND carries responsibility in it
+}
+
+// Identity shown on a message-request card. Context, NOT an endorsement - the wording on
+// the client must not imply the platform vouches for the sender.
+message ClubBadge {
+  string club_id = 1;
+  string club_name = 2;
+  string role = 3;        // highest ClubRole held, enum NAME (Owner, Admin, HeadCoach, ...)
+  bool is_verified = 4;
+  int32 member_count = 5;
+}
+
+message ResolveUserRelationshipRequest {
+  string viewer_user_id = 1;
+  string target_user_id = 2;
+}
+
+message ResolveUserRelationshipResponse {
+  RelationshipKind relationship = 1;
+  TrustLevel viewer_trust = 2;
+  TrustLevel target_trust = 3;
+  repeated ClubBadge viewer_clubs = 4;  // ranked, capped so the payload stays bounded
+  int32 viewer_club_count = 5;          // total before the cap
 }
