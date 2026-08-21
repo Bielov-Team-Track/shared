@@ -86,5 +86,9 @@
         LinkAlreadyInHousehold = 627,
         LinkRequestClosed = 628,
         GuardianMembershipRequired = 629,
+
+        // Messaging & trust (700-799)
+        MessagingNotTrusted = 700,
+        MessagingBlocked = 701,
     }
 }
