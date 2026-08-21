@@ -90,5 +90,9 @@
         // Messaging & trust (700-799)
         MessagingNotTrusted = 700,
         MessagingBlocked = 701,
+        MessageRequestPending = 702,
+        MessageRequestDeclined = 703,
+        MessageRequestLimitReached = 704,
+        MinorCrossClubBlocked = 705,
     }
 }
