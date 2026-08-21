@@ -46,6 +46,7 @@
         InvitationNotFound = 403,
         InvitationExpired = 404,
         InsufficientPermissions = 405,
+        ClubApplicationLimitReached = 406,
 
         // Payments (500-599)
         PaymentFailed = 500,
