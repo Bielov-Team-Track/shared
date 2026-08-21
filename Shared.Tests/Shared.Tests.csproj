@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared.DataAccess\Shared.DataAccess.csproj" />
     <ProjectReference Include="..\Shared.Logging\Shared.Logging.csproj" />
+    <ProjectReference Include="..\Shared.Microservices\Shared.Microservices.csproj" />
     <ProjectReference Include="..\Shared.Services\Shared.Services.csproj" />
   </ItemGroup>
 
