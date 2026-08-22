@@ -113,6 +113,13 @@ message GetMembershipResponse {
   // role and its meaning differs per context type (a club Owner is reported
   // as `Coach` in a team), so callers cannot derive this from it.
   bool can_moderate = 6;
+
+  // All DIRECT roles held in this context. Empty for a derived-only guardian.
+  repeated string roles = 7;
+
+  // Ward user ids whose direct standing in this context gives the principal derived
+  // (guardian) standing. Empty means "not a guardian here".
+  repeated string guardian_of = 8;
 }
 
 // === Member Suggestions ===
