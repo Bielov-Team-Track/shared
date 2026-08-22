@@ -43,6 +43,10 @@ public class GuardianLinkService : IGuardianLinkService
 
     private static string ForcedMarkerKey(Guid userId) => $"guardian-links-forced:{userId}";
 
+    private static string WardMarkerKey(Guid wardId) => $"guardian-links-ward-verified:{wardId}";
+
+    private static string WardForcedMarkerKey(Guid wardId) => $"guardian-links-ward-forced:{wardId}";
+
     public async Task UpsertAsync(Guid guardianId, Guid wardId, GuardianPermission permissions)
     {
         var existing = await _linkRepository.Query()
@@ -193,6 +197,59 @@ public class GuardianLinkService : IGuardianLinkService
         }
     }
 
+    public async Task<IReadOnlyList<Guid>> GetGuardianIdsForWardAsync(Guid wardUserId)
+    {
+        return await _linkRepository.Query()
+            .Where(l => l.WardUserId == wardUserId)
+            .Select(l => l.GuardianUserId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    public async Task EnsureWardFreshAsync(Guid wardUserId, bool force = false)
+    {
+        var gate = force ? WardForcedMarkerKey(wardUserId) : WardMarkerKey(wardUserId);
+        if (await IsMarkerPresentAsync(gate, wardUserId)) return;
+
+        try
+        {
+            var remoteGuardians = (await _source.GetGuardiansForMinorAsync(wardUserId))
+                .Distinct().ToList();
+
+            var localLinks = await _linkRepository.Query()
+                .Where(l => l.WardUserId == wardUserId).ToListAsync();
+            var localGuardians = localLinks.Select(l => l.GuardianUserId).ToHashSet();
+
+            /*
+             * View, and only for a guardian we have no row for. GetGuardiansForMinorResponse
+             * carries ids and no permissions, so writing over an existing row would flatten a
+             * Pay grant to View every time a people list rendered. View is the floor: it answers
+             * the facet and grants nothing else until a grant event or EnsureFreshAsync — which
+             * does carry permissions — corrects it.
+             */
+            foreach (var guardianId in remoteGuardians.Where(g => !localGuardians.Contains(g)))
+                _linkRepository.Add(new GuardianLink
+                {
+                    GuardianUserId = guardianId,
+                    WardUserId = wardUserId,
+                    Permissions = GuardianPermission.View
+                });
+
+            var remoteSet = remoteGuardians.ToHashSet();
+            foreach (var link in localLinks.Where(l => !remoteSet.Contains(l.GuardianUserId)))
+                _linkRepository.Delete(link);
+
+            await _linkRepository.SaveChangesAsync();
+            await SetWardMarkersAsync(wardUserId, MarkerTtl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Guardian link ward reconcile skipped for {WardId}: profiles unavailable",
+                wardUserId);
+            await SetWardMarkersAsync(wardUserId, FailureMarkerTtl);
+        }
+    }
+
     private async Task<bool> IsMarkerPresentAsync(string key, Guid userId)
     {
         try
@@ -206,9 +263,16 @@ public class GuardianLinkService : IGuardianLinkService
         }
     }
 
-    private Task SetMarkersAsync(Guid userId, TimeSpan verifiedTtl) => Task.WhenAll(
-        SetMarkerAsync(MarkerKey(userId), verifiedTtl, userId),
-        SetMarkerAsync(ForcedMarkerKey(userId), ForcedMarkerTtl, userId));
+    private Task SetMarkersAsync(Guid userId, TimeSpan verifiedTtl) =>
+        SetMarkerPairAsync(MarkerKey(userId), ForcedMarkerKey(userId), verifiedTtl, userId);
+
+    private Task SetWardMarkersAsync(Guid wardId, TimeSpan verifiedTtl) =>
+        SetMarkerPairAsync(WardMarkerKey(wardId), WardForcedMarkerKey(wardId), verifiedTtl, wardId);
+
+    private Task SetMarkerPairAsync(string verifiedKey, string forcedKey, TimeSpan verifiedTtl, Guid userId) =>
+        Task.WhenAll(
+            SetMarkerAsync(verifiedKey, verifiedTtl, userId),
+            SetMarkerAsync(forcedKey, ForcedMarkerTtl, userId));
 
     private async Task SetMarkerAsync(string key, TimeSpan ttl, Guid userId)
     {

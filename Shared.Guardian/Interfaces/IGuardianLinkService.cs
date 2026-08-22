@@ -30,4 +30,18 @@ public interface IGuardianLinkService
     /// 60 s per user by a separate marker.
     /// </param>
     Task EnsureFreshAsync(Guid userId, bool force = false);
+
+    /// <summary>
+    /// The guardians of one ward, from the local replica alone. The reverse of GetWardIdsAsync;
+    /// the WardUserId index already exists (RemoveAllForWardAsync uses it).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetGuardianIdsForWardAsync(Guid wardUserId);
+
+    /// <param name="force">Skip the one-hour success marker, as EnsureFreshAsync does.</param>
+    /// <summary>
+    /// Reconciles the links of ONE WARD against the source. EnsureFreshAsync is guardian-keyed and
+    /// can therefore only ever heal a guardian who has made a request; a people list has to find
+    /// guardians who have never opened the app, and the only id it holds is the ward's.
+    /// </summary>
+    Task EnsureWardFreshAsync(Guid wardUserId, bool force = false);
 }
