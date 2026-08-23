@@ -2,11 +2,25 @@ using Shared.Contracts.Enums;
 
 namespace Shared.Contracts.Mentions;
 
+/// <summary>
+/// What a group mention selects. Explicit because consumers used to infer it from
+/// <see cref="GroupMentionTerm.Position"/> being null, which made @everyone the only
+/// position-less term by accident — a second one would have silently behaved like it.
+/// Switch on this, never on Position.HasValue.
+/// </summary>
+public enum GroupMentionKind
+{
+    Everyone,
+    Position,
+    Guardians
+}
+
 public record GroupMentionTerm(
     string Token,
     string Label,
     VolleyballPosition? Position,
-    bool RequiresStaffRole)
+    bool RequiresStaffRole,
+    GroupMentionKind Kind = GroupMentionKind.Position)
 {
     public IReadOnlyList<string> Aliases { get; init; } = [];
 }
@@ -24,15 +38,16 @@ public static class GroupMentionVocabulary
 {
     public static IReadOnlyList<GroupMentionTerm> All { get; } =
     [
-        new("everyone", "Everyone", null, RequiresStaffRole: true),
-        new("setters", "Setters", VolleyballPosition.Setter, RequiresStaffRole: false),
-        new("outsides", "Outsides", VolleyballPosition.OutsideHitter, RequiresStaffRole: false),
-        new("opposites", "Opposites", VolleyballPosition.OppositeHitter, RequiresStaffRole: false)
+        new("everyone", "Everyone", null, RequiresStaffRole: true, GroupMentionKind.Everyone),
+        new("guardians", "Guardians", null, RequiresStaffRole: true, GroupMentionKind.Guardians),
+        new("setters", "Setters", VolleyballPosition.Setter, RequiresStaffRole: false, GroupMentionKind.Position),
+        new("outsides", "Outsides", VolleyballPosition.OutsideHitter, RequiresStaffRole: false, GroupMentionKind.Position),
+        new("opposites", "Opposites", VolleyballPosition.OppositeHitter, RequiresStaffRole: false, GroupMentionKind.Position)
         {
             Aliases = ["oppos"]
         },
-        new("middles", "Middles", VolleyballPosition.MiddleBlocker, RequiresStaffRole: false),
-        new("liberos", "Liberos", VolleyballPosition.Libero, RequiresStaffRole: false)
+        new("middles", "Middles", VolleyballPosition.MiddleBlocker, RequiresStaffRole: false, GroupMentionKind.Position),
+        new("liberos", "Liberos", VolleyballPosition.Libero, RequiresStaffRole: false, GroupMentionKind.Position)
     ];
 
     private static readonly Dictionary<string, GroupMentionTerm> ByToken =
@@ -40,7 +55,7 @@ public static class GroupMentionVocabulary
            .ToDictionary(entry => entry.Token, entry => entry.Term, StringComparer.OrdinalIgnoreCase);
 
     private static readonly Dictionary<VolleyballPosition, GroupMentionTerm> ByPosition =
-        All.Where(term => term.Position.HasValue)
+        All.Where(term => term.Kind == GroupMentionKind.Position)
            .ToDictionary(term => term.Position!.Value);
 
     /// <summary>Case-insensitive, and accepts an alias as readily as the canonical token.</summary>
