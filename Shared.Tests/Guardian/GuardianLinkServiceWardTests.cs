@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
@@ -29,6 +30,7 @@ public class GuardianLinkServiceWardTests
     private IRepository<GuardianLink> _linkRepository = null!;
     private IGuardianLinkSource _source = null!;
     private IDistributedCache _cache = null!;
+    private RecordingLogger<GuardianLinkService> _logger = null!;
     private GuardianLinkService _sut = null!;
 
     [SetUp]
@@ -38,6 +40,7 @@ public class GuardianLinkServiceWardTests
         _linkRepository = Substitute.For<IRepository<GuardianLink>>();
         _source = Substitute.For<IGuardianLinkSource>();
         _cache = Substitute.For<IDistributedCache>();
+        _logger = new RecordingLogger<GuardianLinkService>();
 
         var userProfileRepository = Substitute.For<IRepository<UserProfile>>();
         userProfileRepository.Query().Returns(new List<UserProfile>().BuildMock());
@@ -47,8 +50,7 @@ public class GuardianLinkServiceWardTests
         StubCacheAsAStore();
 
         _sut = new GuardianLinkService(_linkRepository, userProfileRepository, _source, _cache,
-            new AgeTierService(new FakeTimeProvider(FrozenNow)),
-            Substitute.For<ILogger<GuardianLinkService>>());
+            new AgeTierService(new FakeTimeProvider(FrozenNow)), _logger);
     }
 
     private void StubCacheAsAStore()
@@ -283,5 +285,43 @@ public class GuardianLinkServiceWardTests
         existing.Tier.Should().Be(GuardianTier.Contact);
         _linkRepository.DidNotReceive().Add(Arg.Any<GuardianLink>());
         _linkRepository.DidNotReceive().Update(Arg.Any<GuardianLink>());
+    }
+
+    /// <summary>
+    /// Two people lists rendering the same ward at once both seed the same guardian row; the loser
+    /// gets 23505. The ward is linked either way, so this is not the source being down.
+    /// </summary>
+    [Test]
+    public async Task EnsureWardFreshAsync_LosesTheInsertRace_IsNotReportedAsProfilesUnavailable()
+    {
+        // Arrange
+        GivenRemoteGuardians(GuardianId);
+        _linkRepository.SaveChangesAsync().Returns<Task>(_ => throw GuardianLinkFailures.DuplicatePair());
+
+        // Act
+        await _sut.EnsureWardFreshAsync(WardId);
+
+        // Assert
+        _logger.Entries.Should().NotContain(e => e.Message.Contains("profiles unavailable"));
+        _logger.Entries.Should().NotContain(e => e.Level >= LogLevel.Warning);
+        _linkRepository.Received(1).Detach(Arg.Is<GuardianLink>(l => l.GuardianUserId == GuardianId));
+    }
+
+    [Test]
+    public async Task EnsureWardFreshAsync_SaveFailsForAnotherReason_NamesTheActualFailureAndDetaches()
+    {
+        // Arrange
+        var failure = new DbUpdateException("deadlock detected");
+        GivenRemoteGuardians(GuardianId);
+        _linkRepository.SaveChangesAsync().Returns<Task>(_ => throw failure);
+
+        // Act
+        await _sut.EnsureWardFreshAsync(WardId);
+
+        // Assert
+        var warning = _logger.Entries.Single(e => e.Level == LogLevel.Warning);
+        warning.Message.Should().Contain(nameof(DbUpdateException));
+        warning.Message.Should().NotContain("profiles unavailable");
+        _linkRepository.Received(1).Detach(Arg.Is<GuardianLink>(l => l.GuardianUserId == GuardianId));
     }
 }

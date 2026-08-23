@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
@@ -34,6 +35,7 @@ public class GuardianLinkServiceTests
     private IGuardianLinkSource _source = null!;
     private IDistributedCache _cache = null!;
     private IAgeTierService _ageTierService = null!;
+    private RecordingLogger<GuardianLinkService> _logger = null!;
     private GuardianLinkService _sut = null!;
 
     private DateTime Now => _timeProvider.GetUtcNow().UtcDateTime;
@@ -50,13 +52,14 @@ public class GuardianLinkServiceTests
         _source = Substitute.For<IGuardianLinkSource>();
         _cache = Substitute.For<IDistributedCache>();
         _ageTierService = new AgeTierService(_timeProvider);
+        _logger = new RecordingLogger<GuardianLinkService>();
 
         _linkRepository.Query().Returns(new List<GuardianLink>().BuildMock());
         _userProfileRepository.Query().Returns(new List<UserProfile>().BuildMock());
         StubCacheAsAStore();
 
         _sut = new GuardianLinkService(_linkRepository, _userProfileRepository, _source, _cache,
-            _ageTierService, Substitute.For<ILogger<GuardianLinkService>>());
+            _ageTierService, _logger);
     }
 
     private void StubCacheAsAStore()
@@ -583,5 +586,101 @@ public class GuardianLinkServiceTests
         // Assert
         existing.Tier.Should().Be(GuardianTier.Contact);
         _linkRepository.Received(1).Update(existing);
+    }
+
+    private void GivenSaveFails(Exception failure) =>
+        _linkRepository.SaveChangesAsync().Returns<Task>(_ => throw failure);
+
+    /// <summary>
+    /// Two requests reconciling the same guardian both read no row and both insert one; the loser
+    /// gets 23505 on the pair index. That is a race, not an outage — reporting it as "profiles
+    /// unavailable" sent whoever read the log looking at the wrong service.
+    /// </summary>
+    [Test]
+    public async Task EnsureFreshAsync_LosesTheInsertRace_IsNotReportedAsProfilesUnavailable()
+    {
+        // Arrange
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.Message));
+        GivenSaveFails(GuardianLinkFailures.DuplicatePair());
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        _logger.Entries.Should().NotContain(e => e.Message.Contains("profiles unavailable"));
+        _logger.Entries.Should().NotContain(e => e.Level >= LogLevel.Warning);
+    }
+
+    [Test]
+    public async Task EnsureFreshAsync_LosesTheInsertRace_DetachesTheInsertItStaged()
+    {
+        // Arrange
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.Message));
+        GivenSaveFails(GuardianLinkFailures.DuplicatePair());
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        _linkRepository.Received(1).Detach(Arg.Is<GuardianLink>(l => l.WardUserId == WardId));
+    }
+
+    /// <summary>
+    /// The row is there — the winner wrote it — but our updates and deletes rolled back with the
+    /// insert, so the reconcile is unfinished. The short window retries it rather than claiming a
+    /// clean hour.
+    /// </summary>
+    [Test]
+    public async Task EnsureFreshAsync_LosesTheInsertRace_KeepsTheRetryWindowOpen()
+    {
+        // Arrange
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.Message));
+        GivenSaveFails(GuardianLinkFailures.DuplicatePair());
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        await _cache.Received(1).SetAsync(VerifiedKey, Arg.Any<byte[]>(),
+            Arg.Is<DistributedCacheEntryOptions>(o =>
+                o.AbsoluteExpirationRelativeToNow == TimeSpan.FromMinutes(5)),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task EnsureFreshAsync_SaveFailsForAnotherReason_NamesTheActualFailure()
+    {
+        // Arrange
+        var failure = new DbUpdateException("deadlock detected");
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.Message));
+        GivenSaveFails(failure);
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        var warning = _logger.Entries.Single(e => e.Level == LogLevel.Warning);
+        warning.Message.Should().Contain(nameof(DbUpdateException));
+        warning.Message.Should().NotContain("profiles unavailable");
+        warning.Exception.Should().BeSameAs(failure);
+    }
+
+    [Test]
+    public async Task EnsureFreshAsync_SaveFailsForAnotherReason_DetachesTheInsertItStaged()
+    {
+        // Arrange
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.Message));
+        GivenSaveFails(new DbUpdateException("deadlock detected"));
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        _linkRepository.Received(1).Detach(Arg.Is<GuardianLink>(l => l.WardUserId == WardId));
     }
 }

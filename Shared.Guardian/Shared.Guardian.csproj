@@ -10,6 +10,9 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <!-- Direct: the reconcile reads SqlState/ConstraintName off PostgresException to tell a
+         lost insert race from a real failure. Arriving transitively is not a guarantee. -->
+    <PackageReference Include="Npgsql" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

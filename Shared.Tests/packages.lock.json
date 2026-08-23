@@ -990,6 +990,7 @@
           "Microsoft.Extensions.Caching.Abstractions": "[10.0.0, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.0, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.0, )",
+          "Npgsql": "[10.0.0, )",
           "Shared.Messaging": "[1.0.0, )",
           "Shared.Services": "[1.0.0, )"
         }

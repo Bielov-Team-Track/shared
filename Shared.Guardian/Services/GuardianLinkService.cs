@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Shared.DataAccess.Repositories.Interfaces;
 using Shared.Enums;
+using Shared.Guardian.Data;
 using Shared.Guardian.Interfaces;
 using Shared.Guardian.Models;
 using Shared.Models;
@@ -137,6 +139,7 @@ public class GuardianLinkService : IGuardianLinkService
         var gate = force ? ForcedMarkerKey(userId) : MarkerKey(userId);
         if (await IsMarkerPresentAsync(gate, userId)) return;
 
+        var staged = new List<GuardianLink>();
         try
         {
             var remoteMinors = (await _source.GetMinorsForGuardianAsync(userId))
@@ -174,31 +177,44 @@ public class GuardianLinkService : IGuardianLinkService
                     existing.Permissions = info.Permissions;
                     existing.Tier = info.Tier;
                     _linkRepository.Update(existing);
+                    staged.Add(existing);
                 }
                 else
                 {
-                    _linkRepository.Add(new GuardianLink
+                    var link = new GuardianLink
                     {
                         GuardianUserId = userId,
                         WardUserId = minorId,
                         Permissions = info.Permissions,
                         Tier = info.Tier
-                    });
+                    };
+                    _linkRepository.Add(link);
+                    staged.Add(link);
                 }
             }
 
             var remoteSet = remoteMinors.ToHashSet();
             foreach (var link in localLinks.Where(l =>
                          !remoteSet.Contains(l.WardUserId) || deniedWardIds.Contains(l.WardUserId)))
+            {
                 _linkRepository.Delete(link);
+                staged.Add(link);
+            }
 
             await _linkRepository.SaveChangesAsync();
             await SetMarkersAsync(userId, MarkerTtl);
         }
+        catch (DbUpdateException ex) when (IsGuardianLinkRace(ex))
+        {
+            _logger.LogDebug("Guardian link reconcile for {UserId} lost an insert race; the pair is already linked",
+                userId);
+            await AbandonAsync(staged, userId, SetMarkersAsync);
+        }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Guardian link reconcile skipped for {UserId}: profiles unavailable", userId);
-            await SetMarkersAsync(userId, FailureMarkerTtl);
+            _logger.LogWarning(ex, "Guardian link reconcile skipped for {UserId}: {Failure}",
+                userId, ex.GetType().Name);
+            await AbandonAsync(staged, userId, SetMarkersAsync);
         }
     }
 
@@ -216,6 +232,7 @@ public class GuardianLinkService : IGuardianLinkService
         var gate = force ? WardForcedMarkerKey(wardUserId) : WardMarkerKey(wardUserId);
         if (await IsMarkerPresentAsync(gate, wardUserId)) return;
 
+        var staged = new List<GuardianLink>();
         try
         {
             var remoteGuardians = (await _source.GetGuardiansForMinorAsync(wardUserId))
@@ -235,27 +252,61 @@ public class GuardianLinkService : IGuardianLinkService
              * Contact to a full guardian on every render. GuardianTier.Guardian is its floor.
              */
             foreach (var guardianId in remoteGuardians.Where(g => !localGuardians.Contains(g)))
-                _linkRepository.Add(new GuardianLink
+            {
+                var link = new GuardianLink
                 {
                     GuardianUserId = guardianId,
                     WardUserId = wardUserId,
                     Permissions = GuardianPermission.View,
                     Tier = GuardianTier.Guardian
-                });
+                };
+                _linkRepository.Add(link);
+                staged.Add(link);
+            }
 
             var remoteSet = remoteGuardians.ToHashSet();
             foreach (var link in localLinks.Where(l => !remoteSet.Contains(l.GuardianUserId)))
+            {
                 _linkRepository.Delete(link);
+                staged.Add(link);
+            }
 
             await _linkRepository.SaveChangesAsync();
             await SetWardMarkersAsync(wardUserId, MarkerTtl);
         }
+        catch (DbUpdateException ex) when (IsGuardianLinkRace(ex))
+        {
+            _logger.LogDebug("Guardian link ward reconcile for {WardId} lost an insert race; already linked",
+                wardUserId);
+            await AbandonAsync(staged, wardUserId, SetWardMarkersAsync);
+        }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Guardian link ward reconcile skipped for {WardId}: profiles unavailable",
-                wardUserId);
-            await SetWardMarkersAsync(wardUserId, FailureMarkerTtl);
+            _logger.LogWarning(ex, "Guardian link ward reconcile skipped for {WardId}: {Failure}",
+                wardUserId, ex.GetType().Name);
+            await AbandonAsync(staged, wardUserId, SetWardMarkersAsync);
         }
+    }
+
+    private static bool IsGuardianLinkRace(DbUpdateException ex) =>
+        ex.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: GuardianLinkSchema.GuardianWardUniqueIndex
+        };
+
+    /// <summary>
+    /// Gives up on this reconcile without leaving anything behind for the next SaveChangesAsync.
+    /// Postgres rolled the whole batch back, but EF keeps every staged entry tracked, so an
+    /// unrelated save later in the same request re-issues them — which is how a lost insert race
+    /// surfaced as a 500 from whichever endpoint happened to save next. The reconcile is unfinished
+    /// either way, so it re-runs on the short window rather than claiming a verified hour.
+    /// </summary>
+    private async Task AbandonAsync(List<GuardianLink> staged, Guid subjectId,
+        Func<Guid, TimeSpan, Task> setMarkers)
+    {
+        foreach (var link in staged) _linkRepository.Detach(link);
+        await setMarkers(subjectId, FailureMarkerTtl);
     }
 
     private async Task<bool> IsMarkerPresentAsync(string key, Guid userId)

@@ -48,6 +48,7 @@ public class BaseRepository<T> : IRepository<T> where T : class, IEntity<Guid>
     public virtual void AddRange(IEnumerable<T> entities) => _dbSet.AddRange(entities);
     public virtual void Update(T entity) => _dbSet.Update(entity);
     public virtual void Delete(T entity) => _dbSet.Remove(entity);
+    public virtual void Detach(T entity) => _context.Entry(entity).State = EntityState.Detached;
 
     public virtual async Task DeleteByIdAsync(Guid id)
     {
