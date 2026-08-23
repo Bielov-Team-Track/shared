@@ -57,6 +57,10 @@ message CheckGuardianAccessResponse {
   bool is_under_removal_notice = 2;
   int32 permissions = 3;
   repeated string granted_consent_types = 4;
+
+  // GuardianTier as an int. 0 = Guardian, which is what an absent field means and what
+  // every link written before this phase is.
+  int32 tier = 5;
 }
 
 message GetGuardiansForMinorRequest {
