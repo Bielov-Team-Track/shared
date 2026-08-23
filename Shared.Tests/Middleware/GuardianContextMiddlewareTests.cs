@@ -1,8 +1,6 @@
 using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
-using NSubstitute;
 using Shared.Enums;
 using Shared.Exceptions;
 using Shared.Microservices.Guardian;
@@ -15,25 +13,15 @@ namespace Shared.Tests.Middleware;
 [Category("Unit")]
 public class GuardianContextMiddlewareTests
 {
-    private const string AuthSource = "cache";
-
     private static readonly Guid ActorId = Guid.NewGuid();
     private static readonly Guid SubjectId = Guid.NewGuid();
 
-    private IGuardianCacheService _cache = null!;
-    private IActionRiskClassifier _riskClassifier = null!;
     private bool _nextRan;
 
     [SetUp]
     public void SetUp()
     {
         _nextRan = false;
-        _cache = Substitute.For<IGuardianCacheService>();
-        _riskClassifier = Substitute.For<IActionRiskClassifier>();
-
-        _riskClassifier.GetRiskLevel(Arg.Any<HttpRequest>()).Returns(ActionRiskLevel.Low);
-        _cache.HasAccessWithCacheAsync(ActorId, SubjectId).Returns((true, AuthSource));
-        _cache.HasAccessFromDbAsync(ActorId, SubjectId).Returns((true, AuthSource));
     }
 
     private GuardianContextMiddleware Sut() => new(_ =>
@@ -42,18 +30,17 @@ public class GuardianContextMiddlewareTests
         return Task.CompletedTask;
     });
 
-    private Task Invoke(HttpContext context, bool rejectUnmarkedEndpoints = false) =>
-        Sut().InvokeAsync(context, _cache, _riskClassifier,
-            new OptionsWrapper<GuardianDelegationSettings>(
-                new GuardianDelegationSettings { RejectUnmarkedEndpoints = rejectUnmarkedEndpoints }));
+    private Task Invoke(HttpContext context) => Sut().InvokeAsync(context);
 
-    private static DefaultHttpContext Context(string? actingAs = null)
+    private static DefaultHttpContext Context(string? actingAs = null, bool authenticated = true)
     {
-        var context = new DefaultHttpContext
+        var context = new DefaultHttpContext();
+
+        if (authenticated)
         {
-            User = new ClaimsPrincipal(
-                new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, ActorId.ToString())], "TestAuth"))
-        };
+            context.User = new ClaimsPrincipal(
+                new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, ActorId.ToString())], "TestAuth"));
+        }
 
         if (actingAs is not null)
             context.Request.Headers[GuardianContextKeys.ActingAsHeader] = actingAs;
@@ -78,7 +65,7 @@ public class GuardianContextMiddlewareTests
         LeaveUnmarked(context);
 
         // Act
-        await Invoke(context, rejectUnmarkedEndpoints: true);
+        await Invoke(context);
 
         // Assert
         _nextRan.Should().BeTrue();
@@ -86,31 +73,29 @@ public class GuardianContextMiddlewareTests
     }
 
     [Test]
-    public async Task HeaderAndMarkedEndpoint_PassesThroughWithoutTouchingTheCache()
+    public async Task HeaderAndMarkedEndpoint_PassesThrough()
     {
         // Arrange
         var context = Context(SubjectId.ToString());
         Mark(context);
 
         // Act
-        await Invoke(context, rejectUnmarkedEndpoints: true);
+        await Invoke(context);
 
         // Assert
         _nextRan.Should().BeTrue();
         context.Items.Should().BeEmpty();
-        await _cache.DidNotReceiveWithAnyArgs().HasAccessWithCacheAsync(default, default);
-        await _cache.DidNotReceiveWithAnyArgs().HasAccessFromDbAsync(default, default);
     }
 
     [Test]
-    public async Task HeaderAndUnmarkedEndpoint_RejectFlagOn_Throws400()
+    public async Task HeaderAndUnmarkedEndpoint_Throws400()
     {
         // Arrange
         var context = Context(SubjectId.ToString());
         LeaveUnmarked(context);
 
         // Act & Assert
-        (await this.Invoking(_ => Invoke(context, rejectUnmarkedEndpoints: true))
+        (await this.Invoking(_ => Invoke(context))
                 .Should().ThrowAsync<BadRequestException>())
             .Which.Should().Match<BadRequestException>(e =>
                 e.Message == "This endpoint does not accept X-Acting-As" &&
@@ -120,75 +105,61 @@ public class GuardianContextMiddlewareTests
 
     /// <summary>A hub or a health route carries no endpoint metadata, and must be refused too.</summary>
     [Test]
-    public async Task NoEndpointMetadata_RejectFlagOn_Throws400()
+    public async Task NoEndpointMetadata_Throws400()
     {
         // Arrange
         var context = Context(SubjectId.ToString());
 
         // Act & Assert
-        await this.Invoking(_ => Invoke(context, rejectUnmarkedEndpoints: true))
-            .Should().ThrowAsync<BadRequestException>();
+        await this.Invoking(_ => Invoke(context)).Should().ThrowAsync<BadRequestException>();
         _nextRan.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Until 2b a real guardian link let an unmarked endpoint through, and the controller then read
+    /// the ward out of HttpContext.Items. Nothing is written now, so nothing can read it.
+    /// </summary>
     [Test]
-    public async Task HeaderAndUnmarkedEndpoint_RejectFlagOff_RunsTodaysSevenSteps()
+    public async Task HeaderAndUnmarkedEndpoint_WritesNoContextItems()
     {
         // Arrange
         var context = Context(SubjectId.ToString());
         LeaveUnmarked(context);
 
         // Act
-        await Invoke(context);
+        await this.Invoking(_ => Invoke(context)).Should().ThrowAsync<BadRequestException>();
 
         // Assert
-        await _cache.Received(1).HasAccessWithCacheAsync(ActorId, SubjectId);
-        await _cache.Received(1).GetRemovalNoticeStatusAsync(ActorId, SubjectId);
-        _nextRan.Should().BeTrue();
+        context.Items.Should().BeEmpty();
     }
 
+    /// <summary>The header is never parsed: a malformed value is refused for the same reason a valid one is.</summary>
     [Test]
-    public async Task HeaderAndUnmarkedEndpoint_RejectFlagOff_SetsActingAsUserId()
+    public async Task HeaderIsNotAGuid_ThrowsTheSameRefusal()
     {
         // Arrange
-        var context = Context(SubjectId.ToString());
+        var context = Context("not-a-guid");
         LeaveUnmarked(context);
-
-        // Act
-        await Invoke(context);
-
-        // Assert
-        context.Items[GuardianContextKeys.LegacyActingAsUserId].Should().Be(SubjectId);
-        context.Items[GuardianContextKeys.ActorUserId].Should().Be(ActorId);
-        context.Items[GuardianContextKeys.AuthorizationSource].Should().Be(AuthSource);
-        context.Items[GuardianContextKeys.Processed].Should().Be(true);
-    }
-
-    /// <summary>The compatibility branch must not write the key the filter owns.</summary>
-    [Test]
-    public async Task HeaderAndUnmarkedEndpoint_RejectFlagOff_DoesNotSetTheSubjectKey()
-    {
-        // Arrange
-        var context = Context(SubjectId.ToString());
-        LeaveUnmarked(context);
-
-        // Act
-        await Invoke(context);
-
-        // Assert
-        context.Items.Should().NotContainKey(GuardianContextKeys.SubjectUserId);
-    }
-
-    [Test]
-    public async Task HeaderAndUnmarkedEndpoint_RejectFlagOffAndNoLink_ThrowsForbidden()
-    {
-        // Arrange
-        var context = Context(SubjectId.ToString());
-        LeaveUnmarked(context);
-        _cache.HasAccessWithCacheAsync(ActorId, SubjectId).Returns((false, AuthSource));
 
         // Act & Assert
-        await this.Invoking(_ => Invoke(context)).Should().ThrowAsync<ForbiddenException>();
+        (await this.Invoking(_ => Invoke(context))
+                .Should().ThrowAsync<BadRequestException>())
+            .Which.ErrorCode.Should().Be(ErrorCodeEnum.ActingAsValidationFailed);
+    }
+
+    /// <summary>
+    /// auth-service registers this middleware in front of anonymous routes, so the refusal must not
+    /// depend on there being a JWT to compare the header against.
+    /// </summary>
+    [Test]
+    public async Task HeaderAndUnauthenticatedCaller_Throws400()
+    {
+        // Arrange
+        var context = Context(SubjectId.ToString(), authenticated: false);
+        LeaveUnmarked(context);
+
+        // Act & Assert
+        await this.Invoking(_ => Invoke(context)).Should().ThrowAsync<BadRequestException>();
         _nextRan.Should().BeFalse();
     }
 }

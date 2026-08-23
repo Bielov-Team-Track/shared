@@ -6,22 +6,17 @@ namespace Shared.Services;
 public static class GuardianContextKeys
 {
     /// <summary>
-    /// Whose data the request is about. Deliberately NOT "ActingAsUserId": during the 2a window
-    /// the middleware's compatibility branch writes that key and the filter writes this one, so
-    /// nothing can read a legacy value where a validated subject is meant.
+    /// Whose data the request is about. Written only by AcceptsSubjectFilter, so its presence is
+    /// itself the proof that the subject was authorized.
     /// </summary>
     public const string SubjectUserId = "SubjectUserId";
 
     /// <summary>
-    /// Who is making the request. The string stays "ActualUserId" so BaseApiController.ActualUserId
-    /// keeps reading the same slot on both paths.
+    /// Who is making the request. BaseApiController.ActualUserId reads this slot.
     /// </summary>
     public const string ActorUserId = "ActualUserId";
 
     public const string AuthorizationSource = "AuthorizationSource";
     public const string Processed = "GuardianContextProcessed";
     public const string ActingAsHeader = "X-Acting-As";
-
-    /// <summary>2a only. Deleted in 2b together with EffectiveUserId.</summary>
-    public const string LegacyActingAsUserId = "ActingAsUserId";
 }

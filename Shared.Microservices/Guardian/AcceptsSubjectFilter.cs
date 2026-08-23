@@ -45,9 +45,9 @@ public sealed class AcceptsSubjectFilter : IAsyncAuthorizationFilter
         if (!httpContext.Request.Headers.TryGetValue(GuardianContextKeys.ActingAsHeader, out var rawValue))
         {
             /*
-             * The self-serve caller is its own subject. Guid.Empty for an anonymous caller is
-             * what EffectiveUserId has always returned on an [AllowAnonymous] action, so a marked
-             * endpoint behaves identically for everyone who sends no header.
+             * The self-serve caller is its own subject. Guid.Empty for an anonymous caller is what
+             * an [AllowAnonymous] action has always read out of an absent JWT, so marking an
+             * endpoint changes nothing for everyone who sends no header.
              */
             httpContext.Items[GuardianContextKeys.SubjectUserId] = jwtUserId ?? Guid.Empty;
             httpContext.Items[GuardianContextKeys.ActorUserId] = jwtUserId ?? Guid.Empty;

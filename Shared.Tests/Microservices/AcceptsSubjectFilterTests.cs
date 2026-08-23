@@ -98,8 +98,8 @@ public class AcceptsSubjectFilterTests
     }
 
     /// <summary>
-    /// An [AllowAnonymous] action reads Guid.Empty today via EffectiveUserId; the bound subject
-    /// has to say the same thing rather than fail the request.
+    /// An [AllowAnonymous] action reads Guid.Empty out of an absent JWT; the bound subject has to
+    /// say the same thing rather than fail the request.
     /// </summary>
     [Test]
     public async Task NoHeaderAndAnonymous_BindsTheEmptyGuid()
@@ -239,19 +239,6 @@ public class AcceptsSubjectFilterTests
         context.HttpContext.Items[GuardianContextKeys.ActorUserId].Should().Be(ActorId);
         context.HttpContext.Items[GuardianContextKeys.AuthorizationSource].Should().Be(AuthSource);
         context.HttpContext.Items[GuardianContextKeys.Processed].Should().Be(true);
-    }
-
-    [Test]
-    public async Task Success_DoesNotSetTheLegacyActingAsUserIdKey()
-    {
-        // Arrange
-        var context = Context(ActorId, actingAs: SubjectId.ToString());
-
-        // Act
-        await ReleaseTheDelayAndAwait(_sut.OnAuthorizationAsync(context));
-
-        // Assert
-        context.HttpContext.Items.Should().NotContainKey(GuardianContextKeys.LegacyActingAsUserId);
     }
 
     /// <summary>
