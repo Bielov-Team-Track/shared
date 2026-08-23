@@ -136,6 +136,10 @@ message GetMembershipResponse {
   // Ward user ids whose direct standing in this context gives the principal derived
   // (guardian) standing. Empty means "not a guardian here".
   repeated string guardian_of = 8;
+
+  // GuardianRestrictionLevel for the DERIVED standing only. 0 = None. A direct member is
+  // never restricted by this — their membership row is the thing a club removes.
+  int32 guardian_restriction = 9;
 }
 
 // === Member Suggestions ===
