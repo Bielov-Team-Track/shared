@@ -18,4 +18,5 @@ public interface IGuardianLinkSource
     Task<GuardianLinkAccess?> CheckGuardianAccessAsync(Guid guardianId, Guid minorId, CancellationToken ct = default);
 }
 
-public sealed record GuardianLinkAccess(bool HasAccess, GuardianPermission Permissions);
+public sealed record GuardianLinkAccess(bool HasAccess, GuardianPermission Permissions,
+                                        GuardianTier Tier = GuardianTier.Guardian);

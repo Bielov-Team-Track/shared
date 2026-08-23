@@ -16,6 +16,9 @@ public class GuardianLinkConfiguration : IEntityTypeConfiguration<GuardianLink>
         builder.Property(l => l.WardUserId).IsRequired();
         // int column on purpose: [Flags] enum queried with SQL bitwise AND
         builder.Property(l => l.Permissions).IsRequired();
+        // int for the same reason as the column beside it: a service adopting the replica must
+        // land on the same column type, and 0 reads back as Guardian for every pre-tier row.
+        builder.Property(l => l.Tier).HasConversion<int>().IsRequired();
         builder.HasIndex(l => new { l.GuardianUserId, l.WardUserId }).IsUnique();
         builder.HasIndex(l => l.WardUserId);
     }

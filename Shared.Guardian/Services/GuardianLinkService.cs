@@ -47,7 +47,8 @@ public class GuardianLinkService : IGuardianLinkService
 
     private static string WardForcedMarkerKey(Guid wardId) => $"guardian-links-ward-forced:{wardId}";
 
-    public async Task UpsertAsync(Guid guardianId, Guid wardId, GuardianPermission permissions)
+    public async Task UpsertAsync(Guid guardianId, Guid wardId, GuardianPermission permissions,
+        GuardianTier tier = GuardianTier.Guardian)
     {
         var existing = await _linkRepository.Query()
             .FirstOrDefaultAsync(l => l.GuardianUserId == guardianId && l.WardUserId == wardId);
@@ -57,13 +58,15 @@ public class GuardianLinkService : IGuardianLinkService
             {
                 GuardianUserId = guardianId,
                 WardUserId = wardId,
-                Permissions = permissions
+                Permissions = permissions,
+                Tier = tier
             });
         }
         else
         {
-            if (existing.Permissions == permissions) return;
+            if (existing.Permissions == permissions && existing.Tier == tier) return;
             existing.Permissions = permissions;
+            existing.Tier = tier;
             _linkRepository.Update(existing);
         }
         await _linkRepository.SaveChangesAsync();
@@ -167,8 +170,9 @@ public class GuardianLinkService : IGuardianLinkService
 
                 if (localByWard.TryGetValue(minorId, out var existing))
                 {
-                    if (existing.Permissions == info.Permissions) continue;
+                    if (existing.Permissions == info.Permissions && existing.Tier == info.Tier) continue;
                     existing.Permissions = info.Permissions;
+                    existing.Tier = info.Tier;
                     _linkRepository.Update(existing);
                 }
                 else
@@ -177,7 +181,8 @@ public class GuardianLinkService : IGuardianLinkService
                     {
                         GuardianUserId = userId,
                         WardUserId = minorId,
-                        Permissions = info.Permissions
+                        Permissions = info.Permissions,
+                        Tier = info.Tier
                     });
                 }
             }
@@ -225,14 +230,17 @@ public class GuardianLinkService : IGuardianLinkService
              * carries ids and no permissions, so writing over an existing row would flatten a
              * Pay grant to View every time a people list rendered. View is the floor: it answers
              * the facet and grants nothing else until a grant event or EnsureFreshAsync — which
-             * does carry permissions — corrects it.
+             * does carry permissions — corrects it. The tier is seeded the same way and for the
+             * same reason: the response carries none, so a written tier would promote every
+             * Contact to a full guardian on every render. GuardianTier.Guardian is its floor.
              */
             foreach (var guardianId in remoteGuardians.Where(g => !localGuardians.Contains(g)))
                 _linkRepository.Add(new GuardianLink
                 {
                     GuardianUserId = guardianId,
                     WardUserId = wardUserId,
-                    Permissions = GuardianPermission.View
+                    Permissions = GuardianPermission.View,
+                    Tier = GuardianTier.Guardian
                 });
 
             var remoteSet = remoteGuardians.ToHashSet();

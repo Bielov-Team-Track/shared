@@ -8,4 +8,5 @@ public class GuardianLink : BaseEntity
     public Guid GuardianUserId { get; set; }
     public Guid WardUserId { get; set; }
     public GuardianPermission Permissions { get; set; }
+    public GuardianTier Tier { get; set; } = GuardianTier.Guardian;
 }

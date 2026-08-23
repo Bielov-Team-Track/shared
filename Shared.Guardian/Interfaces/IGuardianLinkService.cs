@@ -4,7 +4,8 @@ namespace Shared.Guardian.Interfaces;
 
 public interface IGuardianLinkService
 {
-    Task UpsertAsync(Guid guardianId, Guid wardId, GuardianPermission permissions);
+    Task UpsertAsync(Guid guardianId, Guid wardId, GuardianPermission permissions,
+                     GuardianTier tier = GuardianTier.Guardian);
     Task RemoveAsync(Guid guardianId, Guid wardId);
     Task RemoveAllForWardAsync(Guid wardId);
     Task RemoveAllForUserAsync(Guid userId);

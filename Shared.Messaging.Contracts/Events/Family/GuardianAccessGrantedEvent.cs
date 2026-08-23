@@ -12,4 +12,8 @@ public record GuardianAccessGrantedEvent : IEvent
     public required Guid GuardianId { get; init; }
     public required Guid MinorId { get; init; }
     public required GuardianPermission Permissions { get; init; }
+
+    // Not `required`: publishers written before tiers existed omit it, and every link they
+    // describe is a full guardian.
+    public GuardianTier Tier { get; init; } = GuardianTier.Guardian;
 }

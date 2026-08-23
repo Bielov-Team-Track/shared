@@ -20,8 +20,8 @@ public class GuardianAccessGrantedConsumer : IConsumer<GuardianAccessGrantedEven
     public async Task Consume(ConsumeContext<GuardianAccessGrantedEvent> context)
     {
         var msg = context.Message;
-        await _guardianLinkService.UpsertAsync(msg.GuardianId, msg.MinorId, msg.Permissions);
-        _logger.LogInformation("Guardian link upserted: {GuardianId} -> {MinorId} ({Permissions})",
-            msg.GuardianId, msg.MinorId, msg.Permissions);
+        await _guardianLinkService.UpsertAsync(msg.GuardianId, msg.MinorId, msg.Permissions, msg.Tier);
+        _logger.LogInformation("Guardian link upserted: {GuardianId} -> {MinorId} ({Tier}, {Permissions})",
+            msg.GuardianId, msg.MinorId, msg.Tier, msg.Permissions);
     }
 }

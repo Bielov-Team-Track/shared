@@ -243,4 +243,45 @@ public class GuardianLinkServiceWardTests
         payWards.Should().BeEmpty();
         anyWards.Should().Equal(WardId);
     }
+
+    [Test]
+    public async Task EnsureWardFreshAsync_NewGuardian_SeedsTheGuardianTier()
+    {
+        // Arrange
+        GivenRemoteGuardians(GuardianId);
+
+        // Act
+        await _sut.EnsureWardFreshAsync(WardId);
+
+        // Assert
+        AddedLink().Tier.Should().Be(GuardianTier.Guardian);
+    }
+
+    /// <summary>
+    /// The tier's half of EnsureWardFreshAsync_ExistingGuardian_DoesNotDowngradePermissions:
+    /// GetGuardiansForMinor carries no tier either, so a reconcile that wrote one would promote
+    /// every Contact to a full guardian each time a people list rendered.
+    /// </summary>
+    [Test]
+    public async Task EnsureWardFreshAsync_ExistingGuardian_LeavesTheTierAlone()
+    {
+        // Arrange
+        var existing = new GuardianLink
+        {
+            GuardianUserId = GuardianId,
+            WardUserId = WardId,
+            Permissions = GuardianPermission.View,
+            Tier = GuardianTier.Contact
+        };
+        GivenLinks(existing);
+        GivenRemoteGuardians(GuardianId);
+
+        // Act
+        await _sut.EnsureWardFreshAsync(WardId);
+
+        // Assert
+        existing.Tier.Should().Be(GuardianTier.Contact);
+        _linkRepository.DidNotReceive().Add(Arg.Any<GuardianLink>());
+        _linkRepository.DidNotReceive().Update(Arg.Any<GuardianLink>());
+    }
 }

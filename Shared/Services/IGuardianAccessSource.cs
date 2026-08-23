@@ -20,4 +20,5 @@ public sealed record GuardianAccessSnapshot(
     bool HasAccess,
     bool IsUnderRemovalNotice,
     GuardianPermission Permissions,
-    IReadOnlySet<ConsentType> GrantedConsentTypes);
+    IReadOnlySet<ConsentType> GrantedConsentTypes,
+    GuardianTier Tier = GuardianTier.Guardian);

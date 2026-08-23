@@ -515,4 +515,73 @@ public class GuardianLinkServiceTests
         // Assert
         _linkRepository.Received(1).Add(Arg.Is<GuardianLink>(l => l.WardUserId == WardId));
     }
+
+    [Test]
+    public async Task UpsertAsync_NewPairWithATier_WritesTheTier()
+    {
+        // Arrange
+        // Act
+        await _sut.UpsertAsync(GuardianId, WardId, GuardianPermission.View, GuardianTier.Contact);
+
+        // Assert
+        _linkRepository.Received(1).Add(Arg.Is<GuardianLink>(l => l.Tier == GuardianTier.Contact));
+    }
+
+    [Test]
+    public async Task UpsertAsync_TierChangedPermissionsUnchanged_UpdatesTheRow()
+    {
+        // Arrange
+        var existing = new GuardianLink
+        {
+            GuardianUserId = GuardianId,
+            WardUserId = WardId,
+            Permissions = GuardianPermission.View,
+            Tier = GuardianTier.Contact
+        };
+        GivenLinks(existing);
+
+        // Act
+        await _sut.UpsertAsync(GuardianId, WardId, GuardianPermission.View, GuardianTier.Guardian);
+
+        // Assert
+        existing.Tier.Should().Be(GuardianTier.Guardian);
+        _linkRepository.Received(1).Update(existing);
+    }
+
+    [Test]
+    public async Task EnsureFreshAsync_NewWard_CopiesTheRemoteTier()
+    {
+        // Arrange
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.View, GuardianTier.Payer));
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        _linkRepository.Received(1).Add(Arg.Is<GuardianLink>(l => l.Tier == GuardianTier.Payer));
+    }
+
+    [Test]
+    public async Task EnsureFreshAsync_RemoteTierDiffersFromLocal_UpdatesTheTier()
+    {
+        // Arrange
+        var existing = new GuardianLink
+        {
+            GuardianUserId = GuardianId,
+            WardUserId = WardId,
+            Permissions = GuardianPermission.View,
+            Tier = GuardianTier.Guardian
+        };
+        GivenLinks(existing);
+        GivenRemoteWards(WardId);
+        GivenRemoteAccess(WardId, new GuardianLinkAccess(true, GuardianPermission.View, GuardianTier.Contact));
+
+        // Act
+        await _sut.EnsureFreshAsync(GuardianId);
+
+        // Assert
+        existing.Tier.Should().Be(GuardianTier.Contact);
+        _linkRepository.Received(1).Update(existing);
+    }
 }
