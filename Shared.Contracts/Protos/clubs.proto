@@ -61,11 +61,25 @@ service ClubsInternalService {
   rpc ResolveUserRelationship (ResolveUserRelationshipRequest) returns (ResolveUserRelationshipResponse);
 }
 
+// Which people a member list is being asked for. The zero value is Members and not an
+// UNSPECIFIED sentinel on purpose: proto3 gives an absent field the zero value, and every
+// caller that predates this enum means "the direct rows" - chat seeding, @everyone, post
+// fan-out, event-invite seeding. An UNSPECIFIED zero would make all four of them ask a
+// question nobody has answered, on the day the field ships.
+enum Audience {
+  AUDIENCE_MEMBERS   = 0;  // every direct row, any role
+  AUDIENCE_PLAYERS   = 1;  // direct rows holding a playing role
+  AUDIENCE_STAFF     = 2;  // direct rows holding a staff role
+  AUDIENCE_GUARDIANS = 3;  // derived - guardians of the Members audience; each carries via_user_ids
+  AUDIENCE_EVERYONE  = 4;  // Members U Guardians, deduped by user id
+}
+
 // === Club Members ===
 
 message GetClubMembersRequest {
   string club_id = 1;
   repeated string exclude_user_ids = 2;
+  Audience audience = 3;
 }
 
 message GetClubMembersResponse {
@@ -77,6 +91,7 @@ message GetClubMembersResponse {
 message GetGroupMembersRequest {
   string group_id = 1;
   repeated string exclude_user_ids = 2;
+  Audience audience = 3;
 }
 
 message GetGroupMembersResponse {
@@ -88,6 +103,7 @@ message GetGroupMembersResponse {
 message GetTeamMembersRequest {
   string team_id = 1;
   repeated string exclude_user_ids = 2;
+  Audience audience = 3;
 }
 
 message GetTeamMembersResponse {
@@ -129,12 +145,16 @@ message GetMemberSuggestionsRequest {
   string context_id = 2;
   string query = 3;
   int32 limit = 4;
+  Audience audience = 5;
 }
 
 message GetMemberSuggestionsResponse {
   repeated MemberSuggestion suggestions = 1;
   map<string, int32> position_counts = 2;  // VolleyballPosition name -> resolved member count
   int32 everyone_count = 3;
+  // How many derived guardians this context has. Zero and "not offered here" are different
+  // answers and the REST layer must keep them different.
+  int32 guardians_count = 4;
 }
 
 // === Position Resolution ===
@@ -172,6 +192,10 @@ message MemberInfo {
   string user_id = 1;
   string display_name = 2;
   string role = 3;
+  // Ward user ids this entry stands behind. NON-EMPTY means the entry is a DERIVED guardian
+  // and holds no direct row here, so `role` is empty for it. Empty means an ordinary direct
+  // member. Only ever populated for the Guardians and Everyone audiences.
+  repeated string via_user_ids = 4;
 }
 
 message MemberSuggestion {
