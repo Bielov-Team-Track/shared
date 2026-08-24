@@ -1,3 +1,5 @@
+using Shared.Enums;
+
 namespace Shared.Messaging.Contracts.Events.Family;
 
 /// <summary>
@@ -19,9 +21,9 @@ public class FamilyInvitationEmailRequestedEvent : IEvent
     /// <summary>The address as typed by the sender, normalised. There is no user behind it.</summary>
     public string TargetEmail { get; set; } = string.Empty;
 
-    /// <summary>True when the invitation asks them to stand as a guardian rather than to be a
-    /// child of the household. The two emails say different things.</summary>
-    public bool IsGuardianInvitation { get; set; }
+    /// <summary>What is being asked. Each kind's email says a different thing, and a nomination
+    /// says the most different thing of the three — the sender is a child, not a parent.</summary>
+    public FamilyInvitationKind Kind { get; set; }
 
     public DateTime ExpiresAt { get; set; }
     public DateTime Timestamp { get; set; }
