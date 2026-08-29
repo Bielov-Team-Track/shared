@@ -14,7 +14,15 @@
         // cannot verify both endpoints.
         public string? ConnectWebhookSecret { get; set; }
 
-        public decimal PlatformFeePercent { get; set; } = 7.0m;
-        public decimal PlatformFeeMin { get; set; } = 0.50m;
+        // Set to undercut Spond, the incumbent in UK grassroots sport, at every amount: they
+        // charge a flat 0.20 PLUS 2.5%, so max(2.5%, 0.20) is cheaper by 2.5% of the payment
+        // below 8.00 and by a flat 0.20 above it. These are defaults rather than dead values —
+        // nothing in the environment overrides them, so production runs what is written here.
+        public decimal PlatformFeePercent { get; set; } = 2.5m;
+        public decimal PlatformFeeMin { get; set; } = 0.20m;
+
+        // Subscriptions carry no minimum: Stripe applies application_fee_percent to the
+        // recurring invoice, and a flat floor has nowhere to live in that model.
+        public decimal SubscriptionFeePercent { get; set; } = 2.5m;
     }
 }
