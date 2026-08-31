@@ -29,9 +29,9 @@ public static class AudienceRoles
     private static readonly IReadOnlySet<string> ClubStaffRoles =
         NameSet("Owner", "Admin", "HeadCoach", "Coach", "Treasurer", "WelfareOfficer");
 
-    private static readonly IReadOnlySet<string> GroupPlayerRoles = NameSet(GroupMemberRole, "Helper");
+    private static readonly IReadOnlySet<string> GroupPlayerRoles = NameSet(GroupMemberRole);
 
-    private static readonly IReadOnlySet<string> GroupStaffRoles = NameSet("Admin", "Coach", "AssistantCoach");
+    private static readonly IReadOnlySet<string> GroupStaffRoles = NameSet("Admin", "Coach", "AssistantCoach", "Helper");
 
     private static readonly IReadOnlySet<string> TeamPlayerRoles = NameSet(TeamPlayerRole, "Captain");
 
