@@ -140,6 +140,16 @@ message GetMembershipResponse {
   // GuardianRestrictionLevel for the DERIVED standing only. 0 = None. A direct member is
   // never restricted by this — their membership row is the thing a club removes.
   int32 guardian_restriction = 9;
+
+  // What this principal may DO here, computed by clubs-service from their roles. Consumers ask
+  // for a permission instead of matching role names, which is what stops each service keeping
+  // its own copy of the role vocabulary and drifting from the others.
+  //
+  // Rides this existing call rather than adding one, so it costs no extra round trip. Additive
+  // and therefore wire-compatible: a consumer that does not read it is unaffected.
+  //
+  // Absent or unreadable means deny. Never populated from anything the caller supplied.
+  repeated string permissions = 10;
 }
 
 // === Member Suggestions ===
