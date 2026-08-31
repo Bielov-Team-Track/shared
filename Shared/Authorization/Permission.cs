@@ -29,6 +29,11 @@ public static class Permission
     // own units without thereby running the club — the two were one permission until the
     // migration inventory showed members.manage also gates registrations and invitations.
     public const string MembersAssign = "members.assign";
+
+    // The club's shape: creating a team or group, renaming one, standing one down. Distinct from
+    // settings.manage (the club's own configuration) and from members.assign (who goes in one) —
+    // a head coach reorganises the squads without touching either.
+    public const string UnitsManage = "units.manage";
     public const string RolesAssign = "roles.assign";
     public const string CoachingAssign = "coaching.assign";
     public const string EventsViewAll = "events.view_all";
@@ -68,6 +73,11 @@ public static class Permission
 
     public const string UnitMembersViewSensitive = "unit.members.view_sensitive";
     public const string UnitMembersManage = "unit.members.manage";
+
+    // The unit's own details — its name, description, branding, whether it is still running.
+    // The unit-scoped twin of units.manage, which is what lets a coach look after their own team
+    // without being able to reorganise the club's.
+    public const string UnitSettingsManage = "unit.settings.manage";
     public const string UnitRosterManage = "unit.roster.manage";
     public const string UnitEventsCreate = "unit.events.create";
     public const string UnitEventsManage = "unit.events.manage";
@@ -86,7 +96,7 @@ public static class Permission
     /// <summary>Every club-scoped permission. An Owner holds exactly this set.</summary>
     public static readonly IReadOnlySet<string> AllClubScoped = new HashSet<string>
     {
-        MembersView, MembersViewSensitive, MembersManage, MembersAssign, RolesAssign,
+        MembersView, MembersViewSensitive, MembersManage, MembersAssign, UnitsManage, RolesAssign,
         CoachingAssign,
         EventsViewAll, EventsCreate, EventsManage, FeedbackGive, LibraryManage,
         ContentPost, ContentModerate, ContentBroadcast,
@@ -99,7 +109,8 @@ public static class Permission
         AllClubScoped.Concat(
         [
             UnitMembersView, UnitEventsView, UnitMembersViewSensitive, UnitMembersManage,
-            UnitRosterManage, UnitEventsCreate, UnitEventsManage, UnitFeedbackGive,
+            UnitSettingsManage, UnitRosterManage, UnitEventsCreate, UnitEventsManage,
+            UnitFeedbackGive,
             UnitContentModerate, UnitContentBroadcast, UnitRolesAssign,
         ]));
 }
