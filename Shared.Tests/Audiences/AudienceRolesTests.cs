@@ -15,8 +15,11 @@ public class AudienceRolesTests
     //
     // ClubRole.Guardian is deliberately absent. It is a roster-only marker that grants nothing and
     // Phase 2 deletes it; while it survives it belongs to neither audience.
+    //
+    // Coach joined the club vocabulary with the permission model (2026-08-31). Staff: a coach
+    // coaches, and does not play.
     private static readonly string[] ClubRoleNames =
-        ["Member", "WelfareOfficer", "Treasurer", "HeadCoach", "Admin", "Owner"];
+        ["Member", "WelfareOfficer", "Treasurer", "HeadCoach", "Coach", "Admin", "Owner"];
 
     private static readonly string[] GroupRoleNames =
         ["Member", "Helper", "Admin", "AssistantCoach", "Coach"];
