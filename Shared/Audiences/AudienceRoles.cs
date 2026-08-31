@@ -24,8 +24,11 @@ public static class AudienceRoles
 
     private static readonly IReadOnlySet<string> ClubPlayerRoles = NameSet(ClubMemberRole);
 
+    // Coach and Observer joined the club vocabulary with the permission model (2026-08-31).
+    // Both are staff: neither plays. An Observer attends without taking part, which is a
+    // non-playing seat even though it carries no authority.
     private static readonly IReadOnlySet<string> ClubStaffRoles =
-        NameSet("Owner", "Admin", "HeadCoach", "Treasurer", "WelfareOfficer");
+        NameSet("Owner", "Admin", "HeadCoach", "Coach", "Observer", "Treasurer", "WelfareOfficer");
 
     private static readonly IReadOnlySet<string> GroupPlayerRoles = NameSet(GroupMemberRole, "Helper");
 
