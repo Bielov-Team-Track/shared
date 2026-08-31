@@ -38,6 +38,8 @@
         PaymentInProgress = 311,
         NoFeeConfigured = 312,
         ReminderCooldownActive = 313,
+        TournamentFull = 314,
+        PlayerInAnotherSquad = 315,
 
         // Clubs (400-499)
         ClubNotFound = 400,
