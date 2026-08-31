@@ -227,7 +227,16 @@ message CheckUserClubRolesRequest {
 
 message CheckUserClubRolesResponse {
   bool is_member = 1;
-  repeated string roles = 2;  // Owner, Admin, Treasurer, HeadCoach, Coach, Member
+  repeated string roles = 2;  // Owner, Admin, Treasurer, HeadCoach, Coach, Observer, Member
+
+  // What this principal may DO in the club, computed by clubs-service. Present here as well as
+  // on GetMembership because this is the RPC coaching, payments, profiles and events actually
+  // call — asking them to switch calls to get permissions would be a migration inside a
+  // migration.
+  //
+  // Prefer this over `roles`: matching role names is what let each service keep its own copy of
+  // the vocabulary and drift from the others. Absent or unreadable means deny.
+  repeated string permissions = 3;
 }
 
 // === Skill Matrix ===
