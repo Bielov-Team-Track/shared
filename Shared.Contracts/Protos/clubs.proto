@@ -23,6 +23,11 @@ service ClubsInternalService {
   // For payments-service: check user's roles in a club
   rpc CheckUserClubRoles (CheckUserClubRolesRequest) returns (CheckUserClubRolesResponse);
 
+  // Every context this user can act in, in one call. The listing counterpart to GetMembership:
+  // filtering "events I may see" across many clubs needs the whole picture at once, and asking
+  // per event is the N+1 that makes a permission check too expensive to do properly.
+  rpc GetUserAuthorizedContexts (GetUserAuthorizedContextsRequest) returns (GetUserAuthorizedContextsResponse);
+
   // For coaching-service: skill matrix data
   rpc GetSkillMatrix (GetSkillMatrixRequest) returns (GetSkillMatrixResponse);
 
@@ -223,6 +228,28 @@ message MemberSuggestion {
 message CheckUserClubRolesRequest {
   string user_id = 1;
   string club_id = 2;
+}
+
+// === GetUserAuthorizedContexts ===
+
+message GetUserAuthorizedContextsRequest {
+  string user_id = 1;
+}
+
+message AuthorizedClub {
+  string club_id = 1;
+
+  // What this user may do club-wide. Consumers read the permission they need; nobody re-derives
+  // it from role names.
+  repeated string permissions = 2;
+
+  // Teams and groups this user is a MEMBER of, whatever their role there. Membership, not
+  // authority — it is the reason a player sees their own team's events while holding nothing.
+  repeated string member_unit_ids = 3;
+}
+
+message GetUserAuthorizedContextsResponse {
+  repeated AuthorizedClub clubs = 1;
 }
 
 message CheckUserClubRolesResponse {
