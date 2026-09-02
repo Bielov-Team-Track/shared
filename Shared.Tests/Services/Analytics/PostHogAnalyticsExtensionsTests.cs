@@ -17,9 +17,10 @@ public class PostHogAnalyticsExtensionsTests
             .AddInMemoryCollection(settings.Select(s => new KeyValuePair<string, string?>(s.Key, s.Value)))
             .Build();
 
+        // Deliberately no TimeProvider: the generic host does not register one either, so the
+        // extension has to bring its own clock.
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IConfiguration>(configuration);
         services.AddPostHogAnalytics(configuration, "clubs-service");
 

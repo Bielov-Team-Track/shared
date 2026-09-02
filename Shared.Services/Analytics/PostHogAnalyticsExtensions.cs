@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Shared.Options;
 
 namespace Shared.Services.Analytics;
@@ -34,6 +35,11 @@ public static class PostHogAnalyticsExtensions
 
         services.AddHttpContextAccessor();
         services.AddHttpClient(PostHogCaptureSender.HttpClientName, client => client.Timeout = RequestTimeout);
+
+        // The generic host does not register a clock, and this branch is the only one that needs
+        // one — so a service that happened to get TimeProvider from another package's TryAdd would
+        // fail here first in whichever environment has a key, which is never a developer's.
+        services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<IClientSourceAccessor, ClientSourceAccessor>();
         services.AddSingleton<AnalyticsCaptureQueue>();
