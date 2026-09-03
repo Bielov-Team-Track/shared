@@ -37,6 +37,11 @@ service ClubsInternalService {
   // For events-service: resolve team/group context to parent club
   rpc ResolveClubId (ResolveClubIdRequest) returns (ResolveClubIdResponse);
 
+  // For events-service: venues with their full address, so an event the season planner creates
+  // carries the same Location an organiser-created one does. The planner books a venue by id and
+  // events-service has no other way to read what is at that address.
+  rpc GetVenues (GetVenuesRequest) returns (GetVenuesResponse);
+
   // For profiles-service: check whether the viewer can moderate / coach the target
   // (used to gate guardian visibility on /households/users/{id}/guardians).
   // Returns true iff one of: viewer is club Owner/Admin/HeadCoach in any of target's clubs;
@@ -203,6 +208,35 @@ message ClubNameInfo {
   string club_id = 1;
   string name = 2;
   string logo_url = 3;
+}
+
+// === Venues ===
+
+message GetVenuesRequest {
+  repeated string venue_ids = 1;
+}
+
+message GetVenuesResponse {
+  // Only venues that exist; a missing id is simply absent rather than an error, so one deleted
+  // venue does not fail a whole batch.
+  repeated VenueInfo venues = 1;
+}
+
+message VenueInfo {
+  string venue_id = 1;
+  string club_id = 2;
+  string name = 3;
+  string address_line1 = 4;
+  string address_line2 = 5;
+  string city = 6;
+  string region = 7;
+  string country = 8;
+  string postal_code = 9;
+  // Explicitly optional: a venue added without a map pin has neither, and a proto3 scalar default
+  // would put it at 0,0 — a real place in the Atlantic — instead of nowhere.
+  optional double latitude = 10;
+  optional double longitude = 11;
+  string how_to_get_there = 12;
 }
 
 // === Common Messages ===
