@@ -9,4 +9,10 @@ public record EventCanceledEvent : INotificationEvent
     public required string EventName { get; init; }
     public required string CanceledByUserName { get; init; }
     public string? CancellationReason { get; init; }
+
+    /// <summary>
+    /// When the cancelled session was due to start. A series member holds several, and "Wed Night
+    /// Volley cancelled" alone does not say which one.
+    /// </summary>
+    public DateTime? StartTime { get; init; }
 }

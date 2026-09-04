@@ -12,4 +12,10 @@ public class EventPaymentReminderEvent : INotificationEvent
     public DateTime EventStartTime { get; set; }
     public decimal Cost { get; set; }
     public string? PaymentMessage { get; set; }
+
+    /// <summary>
+    /// ISO code for <see cref="Cost"/>. Without it the amount cannot be shown at all — "8" could be
+    /// pounds or euros — so the body says "Payment due" and leaves the figure out.
+    /// </summary>
+    public string? Currency { get; set; }
 }

@@ -16,4 +16,11 @@ public class UserMentionedEvent : INotificationEvent
     // Set when the mention resolved through a group (e.g. "Setters"); null for a personal
     // mention. notifications-service reads "X mentioned @Setters" only when this is set.
     public string? GroupLabel { get; init; }
+
+    /// <summary>
+    /// The words around the mention, so the notification can show what was said rather than only
+    /// that something was. Optional; without it the body stays empty rather than filled with
+    /// instructions.
+    /// </summary>
+    public string? Preview { get; init; }
 }
